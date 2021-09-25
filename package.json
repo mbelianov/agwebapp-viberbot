@@ -1,0 +1,24 @@
+{
+  "name": "agwebapp-viberbot",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "dev": "nodemon index,js"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "@cloudant/cloudant": "^4.5.1",
+    "api2pdf": "^2.0.0",
+    "axios": "^0.21.4",
+    "cheerio": "^1.0.0-rc.10",
+    "ibm-cloud-env": "^0.2.7",
+    "nodemon": "^2.0.13",
+    "viber-bot": "^1.0.18",
+    "winston": "^3.3.3",
+    "winston-console-formatter": "^1.0.0-beta.3"
+  }
+}

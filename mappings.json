@@ -1,0 +1,93 @@
+{
+  "version": 1,
+  "app_uri": {
+    "searchPatterns": [
+      "cloudfoundry:$.application_uris[0]",
+      "env:APP_URI",
+      "file:/localdev-config.json:$.vcap_application.uri"
+    ]
+  },
+  "api2pdf_key": {
+    "searchPatterns": [
+      "env:API2PDF_KEY",
+      "file:/localdev-config.json:$.vcap_application.api2pdf_key"
+    ]
+  },
+  "cloudant_url": {
+    "searchPatterns": [
+      "cloudfoundry:$['cloudantNoSQLDB'][0].credentials.url",
+      "env:config:$.cloudant.url",
+      "file:/localdev-config.json:$.cloudant.url"
+    ]
+  },
+  "cloudant_apikey": {
+    "searchPatterns": [
+      "cloudfoundry:$['cloudantNoSQLDB'][0].credentials.apikey",
+      "env:config:$.cloudant.apikey",
+      "file:/localdev-config.json:$.cloudant.apikey"
+    ]
+  },
+  "cloudant_host": {
+    "searchPatterns": [
+      "cloudfoundry:$['cloudantNoSQLDB'][0].credentials.host",
+      "env:config:$.cloudant.host",
+      "file:/localdev-config.json:$.cloudant.host"
+    ]
+  },
+  "cloudant_iam_apikey_description": {
+    "searchPatterns": [
+      "cloudfoundry:$['cloudantNoSQLDB'][0].credentials.iam_apikey_description",
+      "env:config:$.cloudant.iam_apikey_description",
+      "file:/localdev-config.json:$.cloudant.iam_apikey_description"
+    ]
+  },
+  "cloudant_iam_apikey_name": {
+    "searchPatterns": [
+      "cloudfoundry:$['cloudantNoSQLDB'][0].credentials.iam_apikey_name",
+      "env:config:$.cloudant.iam_apikey_name",
+      "file:/localdev-config.json:$.cloudant.iam_apikey_name"
+    ]
+  },
+  "cloudant_iam_role_crn": {
+    "searchPatterns": [
+      "cloudfoundry:$['cloudantNoSQLDB'][0].credentials.iam_role_crn",
+      "env:config:$.cloudant.iam_role_crn",
+      "file:/localdev-config.json:$.cloudant.iam_role_crn"
+    ]
+  },
+  "cloudant_iam_serviceid_crn": {
+    "searchPatterns": [
+      "cloudfoundry:$['cloudantNoSQLDB'][0].credentials.iam_serviceid_crn",
+      "env:config:$.cloudant.iam_serviceid_crn",
+      "file:/localdev-config.json:$.cloudant.iam_serviceid_crn"
+    ]
+  },
+  "cloudant_password": {
+    "searchPatterns": [
+      "cloudfoundry:$['cloudantNoSQLDB'][0].credentials.password",
+      "env:config:$.cloudant.password",
+      "file:/localdev-config.json:$.cloudant.password"
+    ]
+  },
+  "cloudant_port": {
+    "searchPatterns": [
+      "cloudfoundry:$['cloudantNoSQLDB'][0].credentials.port",
+      "env:config:$.cloudant.port",
+      "file:/localdev-config.json:$.cloudant.port"
+    ]
+  },
+  "cloudant_username": {
+    "searchPatterns": [
+      "cloudfoundry:$['cloudantNoSQLDB'][0].credentials.username",
+      "env:config:$.cloudant.username",
+      "file:/localdev-config.json:$.cloudant.username"
+    ]
+  },
+  "cloudant_serviceInfo": {
+    "searchPatterns": [
+      "cloudfoundry:$['cloudantNoSQLDB'][0].credentials.serviceInfo",
+      "env:config:$.cloudant.serviceInfo",
+      "file:/localdev-config.json:$.cloudant.serviceInfo"
+    ]
+  }
+}
