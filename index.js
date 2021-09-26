@@ -17,11 +17,11 @@ var Api2Pdf = require('api2pdf');
 var a2pClient = new Api2Pdf(IBMCloudEnv.getString('api2pdf_key'));
 
 //get all registered profiles in viber bot db. each profile in viberbot db can request data from bodimed db
-let profiles;
+var profiles;
 async function getAllProfiles (){
     profiles = await db.listProfiles();
 }
-getAllProfiles();
+//getAllProfiles();
 
 // add profile in the viberbot-db
 const addProfile = async (profile) => {
@@ -97,6 +97,11 @@ bot.on(BotEvents.MESSAGE_RECEIVED, async (message, response) => {
     logger.info(`MESSAGE_RECEIVED: ${JSON.stringify(message)}`);
     logger.info(`RESPONSE: ${JSON.stringify(response.userProfile)}`)
     let re;
+
+    //load all prfiles from db if not already done
+    if (profiles.length == 0)
+        profiles = await db.listProfiles();
+
     if (/здравейте|здравей|привет/i.test(message.text)) {
         response.send(wellcomeMessage, { operation: "wellcome" });
         return;
@@ -130,7 +135,7 @@ bot.on(BotEvents.MESSAGE_RECEIVED, async (message, response) => {
         return;
     }
 
-    if (profiles[0].profile.id && response.userProfile.id == profiles[0].profile.id) { //this is d-r Arabadjikova or other authorized users
+    if (profiles.length > 0 && response.userProfile.id == profiles[0].profile.id) { //this is d-r Arabadjikova or other authorized users
         console.log("hello d-r Arabadjikova")
         re = /^[a-zа-я]{1,}$/gi
         if (re.test(message.text)){
