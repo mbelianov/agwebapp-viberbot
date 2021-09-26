@@ -5,6 +5,6 @@ ENV PORT=8080
 WORKDIR /usr/src/app
 COPY ["package.json", "./"]
 RUN npm install --production --silent && npm audit fix 
-COPY ["*.js","mapping.json", "."]
+COPY ["*.js","mappings.json", "./"]
 EXPOSE ${PORT}
 CMD ["npm", "start"]
