@@ -17,7 +17,7 @@ var Api2Pdf = require('api2pdf');
 var a2pClient = new Api2Pdf(IBMCloudEnv.getString('api2pdf_key'));
 
 //get all registered profiles in viber bot db. each profile in viberbot db can request data from bodimed db
-var profiles[];
+var profiles = [];
 async function getAllProfiles (){
     profiles = await db.listProfiles();
 }
