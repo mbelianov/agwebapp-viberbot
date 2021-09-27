@@ -49,7 +49,7 @@ const logger = createLogger();
 // Creating the bot with access token, name and avatar
 const bot = new ViberBot({
     logger: logger,
-    authToken: "4ddb29c38727de3e-e9fd4c3e3c3cdffd-826e9cdb0b3ba8fb",
+    authToken: IBMCloudEnv.getString('viber_app_key'),
     name: "Асистент",
     avatar: "http://viber.com/avatar.jpg"
 });

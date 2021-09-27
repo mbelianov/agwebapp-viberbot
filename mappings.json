@@ -13,6 +13,12 @@
       "file:/localdev-config.json:$.vcap_application.api2pdf_key"
     ]
   },
+  "viber_app_key": {
+    "searchPatterns": [
+      "env:VIBER_APP_KEY",
+      "file:/localdev-config.json:$.vcap_application.viber_app_key"
+    ]
+  },
   "cloudant_url": {
     "searchPatterns": [
       "cloudfoundry:$['cloudantNoSQLDB'][0].credentials.url",
