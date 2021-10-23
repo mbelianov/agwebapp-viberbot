@@ -1,0 +1,26 @@
+FROM alpine:3.10
+RUN apk add --update nodejs npm
+RUN addgroup -S node && adduser -S node -G node
+USER node
+WORKDIR /usr/src/app
+COPY --chown=node:node package-lock.json package.json ./
+RUN npm ci --only=production
+COPY --chown=node:node *.js ./
+COPY --chown=node:node mappings.json ./
+# COPY ["*.js","mappings.json","./"]
+# RUN npm install --production --silent 
+# RUN npm ci --only=production
+ENV NODE_ENV=production
+ENV PORT=8080
+EXPOSE ${PORT}
+CMD ["npm", "start" ]
+
+
+
+# First stage builds the application FROM ubi8/nodejs-14 as builder 
+# Add application sources ADD app-src $HOME 
+# Install the dependencies RUN npm install 
+# Second stage copies the application to the minimal image FROM ubi8/nodejs-14-minimal 
+# Copy the application source and build artifacts from the builder image to this one COPY --from=builder $HOME $HOME 
+# Run script uses standard ways to run the application CMD npm run -d start
+# docker run -t -i --rm --entrypoint=sh <image name>

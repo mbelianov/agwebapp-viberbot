@@ -1,10 +1,13 @@
-FROM node:12.18-alpine
-RUN apk --no-cache --update upgrade
+FROM alpine:3.10
+RUN apk add --update nodejs npm
+RUN addgroup -S node && adduser -S node -G node
+USER node
+WORKDIR /usr/src/app
+COPY --chown=node:node package-lock.json package.json ./
+RUN npm ci --only=production
+COPY --chown=node:node *.js ./
+COPY --chown=node:node mappings.json ./
 ENV NODE_ENV=production
 ENV PORT=8080
-WORKDIR /usr/src/app
-COPY ["package.json", "./"]
-RUN npm install --production --silent && npm audit fix 
-COPY ["*.js","mappings.json", "./"]
 EXPOSE ${PORT}
-CMD ["npm", "start"]
+CMD ["npm", "start" ]
