@@ -9,8 +9,8 @@ const win1251 = require('./windows-1251');
  * @return HTML page with the exam reults
  */
 
-exports.getResults = (query) => {
-  console.log('In route - Bodimed.getResults');
+exports.getResults = (context, query) => {
+  context.log('In route - Bodimed.getResults');
 
   let headersList = {
     "Accept": "*/*",
@@ -33,7 +33,7 @@ exports.getResults = (query) => {
       return ({ result });
     })
     .catch(error => {
-      console.log("getResults from Bodimed failed", error);
+      context.log.error("getResults from Bodimed failed", error);
       return ({
         message: 'getResults from Bodimed failed',
         error: error,
@@ -50,8 +50,8 @@ exports.getResults = (query) => {
  * @param untilDate start date of the period we search
  * @return JSON array with all found patients
  */
-exports.getPatients = (name) => {
-  console.log('In Bodimed.getPatients');
+exports.getPatients = (context, name) => {
+  context.log('In Bodimed.getPatients');
 
   let headersList = {
     "Accept": "*/*",
@@ -102,7 +102,7 @@ exports.getPatients = (name) => {
       return { patientsList };
     })
     .catch(error => {
-      console.log("getPatients from Bodimed failed", error);
+      context.log.error("getPatients from Bodimed failed", error);
       return {
         message: 'getPatients from Bodimed failed',
         error: error,

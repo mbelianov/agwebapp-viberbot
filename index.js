@@ -296,6 +296,9 @@ bot.on(BotEvents.MESSAGE_RECEIVED, async (message, response) => {
 
 
 const port = process.env.PORT || 8080;
+const publicUrl = IBMCloudEnv.getString('app_uri');
+return http.createServer(bot.middleware()).listen(port, () => bot.setWebhook(publicUrl));
+
 return ngrok.getPublicUrl()
     .then(publicUrl => {
         console.log('Set the new webhook to: ', publicUrl);
