@@ -6,6 +6,21 @@
       "direction": "in",
       "queueName": "incomingmessages",
       "connection": "AzureWebJobsStorage"
+    },    
+    {
+      "type": "table",
+      "direction": "in",
+      "name": "rDoctors",
+      "tableName": "doctors",
+      "take": "50",
+      "connection": "AzureWebJobsStorage"
+    },
+    {
+      "type": "table",
+      "direction": "out",
+      "name": "wDoctors",
+      "tableName": "doctors",
+      "connection": "AzureWebJobsStorage"
     }
   ]
 }

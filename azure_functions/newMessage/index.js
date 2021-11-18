@@ -4,14 +4,14 @@ const { createHmac } = require ('crypto');
 module.exports = async function (context, req) {
     context.log('New incoming message.');
 
-    const secret = process.env["VIBER_AUTH_TOKEN"];
+    const secret = process.env.VIBER_AUTH_TOKEN;
     const hash = createHmac('sha256', secret)
-               .update(req.rawBody)
+               .update(req.rawBody || "")
                .digest('hex');
 
     if (hash === req.headers['x-viber-content-signature'])
     {   
-            if (req.body.event === "message"){
+        if (req.body.event === "message"){
             context.log(`-- event type is "${req.body.event}": putting in the queue`)
             context.bindings.incomeMsgQueue = req.body;
         } else

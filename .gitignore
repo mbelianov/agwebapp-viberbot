@@ -1,2 +1,7 @@
 node_modules
 localdev-config.json
+
+# Azurite artifacts
+__blobstorage__
+__queuestorage__
+__azurite_db*__.json

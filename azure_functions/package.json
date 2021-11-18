@@ -9,6 +9,7 @@
   "dependencies": {
     "api2pdf": "^2.0.1",
     "axios": "^0.24.0",
-    "cheerio": "^1.0.0-rc.10"
+    "cheerio": "^1.0.0-rc.10",
+    "ibm-watson": "^6.2.1"
   }
 }

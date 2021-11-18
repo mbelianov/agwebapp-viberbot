@@ -1,6 +1,10 @@
 {
   "version": "2.0",
   "logging": {
+    "logLevel": {
+      "Function.processMessages": "Information",
+      "default": "None"
+    },
     "applicationInsights": {
       "samplingSettings": {
         "isEnabled": true,

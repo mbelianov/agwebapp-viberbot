@@ -1,0 +1,4 @@
+Epic Security: User story 001
+Only bot users that are doctors shall be allowed to query the Bodimed database. 
+
+User story 002
