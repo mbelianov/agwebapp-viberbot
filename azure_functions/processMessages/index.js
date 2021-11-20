@@ -22,11 +22,11 @@ module.exports = async function (context, myQueueItem) {
 
   if (myQueueItem.event === "message") {
     context.log('Processing new mesasage from the queue');
-    context.log.verbose(myQueueItem);
+    context.log(myQueueItem);
 
-    let tracking_data = JSON.parse(myQueueItem.message.tracking_data);
+    let tracking_data = myQueueItem.message.tracking_data ? JSON.parse(myQueueItem.message.tracking_data) : {};
 
-    if (tracking_data && tracking_data.timestamp < (Date.now() - 600*1000)) // timeout
+    if (tracking_data && tracking_data.timestamp < (Date.now() - 600 * 1000)) // timeout
       tracking_data.data = "";
 
     let i = doctors.findIndex(doctor => doctor.viber_id == myQueueItem.sender.id);
@@ -56,8 +56,8 @@ module.exports = async function (context, myQueueItem) {
           "sender": { "name": "Асистент" },
           "text": `${count} от ${patients.patientsList.length}`
         })
-        .then(res => { context.log.verbose(res) })
-        .catch(error => { context.log.error(error) })
+          .then(res => { context.log.verbose(res) })
+          .catch(error => { context.log.error(error) })
 
         return await myAxios.post('/pa/send_message', {
           "receiver": myQueueItem.sender.id,
@@ -66,8 +66,8 @@ module.exports = async function (context, myQueueItem) {
           "sender": { "name": "Асистент" },
           "rich_media": richMediaContent
         })
-        .then(res => { context.log.verbose(res) })
-        .catch(error => { context.log.error(error) })
+          .then(res => { context.log.verbose(res) })
+          .catch(error => { context.log.error(error) })
       }
 
       let re_002 = /^\?idnap=[0-9]+&pass=[0-9]+$/gi
@@ -91,51 +91,57 @@ module.exports = async function (context, myQueueItem) {
           .catch(error => { context.log.error("api2pdf error: ", error) });
       }
     }
-    else {
 
-      let re_000 = /^uin:[0-9]{10}$/gi //new user in Doctor role
-      if (re_000.test(myQueueItem.message.text)) {
-        let reply = "Моля въведете парола за Бодимед.";
-        let data = myQueueItem.message.text;
+    let re_000 = /^add uin:[0-9]{10}pass:[a-zа-я0-9]{1,}$/gi //new user in Doctor role
+    let re_000_uin = /uin:[0-9]{10}/gi
+    let re_000_pass = /pass:[a-zа-я0-9]{1,}/gi
+    if (re_000.test(myQueueItem.message.text)) {
+      let reply = "Вие сте оторизиран.";
 
-        if (doctors.length >= 50) {// max 50 users with a 'Doctor' role
-          reply = "Достигнат максимален брой потребители";
-          data = ""
+      if (doctors.length >= 50) {// max 50 users with a 'Doctor' role
+        reply = "Достигнат максимален брой оторизирани потребители";
+      }
+      else {
+        if (i == -1){
+          context.bindings.wDoctors = [];
+          context.bindings.wDoctors.push({
+            PartitionKey: "Partition",
+            RowKey: myQueueItem.sender.id,
+            uin: myQueueItem.message.text.match(re_000_uin)[0].substr(-10),
+            pass: myQueueItem.message.text.match(re_000_pass)[0].substr(5),
+            name: myQueueItem.sender.name,
+            viber_id: myQueueItem.sender.id
+          })
         }
-
-        await myAxios.post('/pa/send_message', {
-          "receiver": myQueueItem.sender.id,
-          "min.api.version": 1,
-          "type": "text",
-          "sender": { "name": "Асистент" },
-          "text": reply,
-          "tracking_data": `{"timestamp": ${Date.now()},"data": "${data}"}`
-        })
-        .then(res => { context.log.verbose(res) })
-        .catch(error => { context.log.error(error) })
+        else {
+          reply = "Недопустима повторна оторизация."
+        }
       }
 
-      context.log("l:", tracking_data.data)
-      if (tracking_data && re_000.test(tracking_data.data)) {
-        doctors.push({
-          PartitionKey: "Partition",
-          RowKey: myQueueItem.sender.id,
-          uin: tracking_data.data.substr(-10),
-          pass: myQueueItem.message.text,
-          name: myQueueItem.sender.name,
-          viber_id: myQueueItem.sender.id
-        })
-        context.bindings.wDoctors = doctors;
-        await myAxios.post('/pa/send_message', {
-          "receiver": myQueueItem.sender.id,
-          "min.api.version": 1,
-          "type": "text",
-          "sender": { "name": "Асистент" },
-          "text": `Чудесно. Вече сте регистриран като Доктор.`
-        })
+      return await myAxios.post('/pa/send_message', {
+        "receiver": myQueueItem.sender.id,
+        "min.api.version": 1,
+        "type": "text",
+        "sender": { "name": "Асистент" },
+        "text": reply
+      })
         .then(res => { context.log.verbose(res) })
         .catch(error => { context.log.error(error) })
-      }
+    }
+
+    let re_003 = /^delete uin:[0-9]{10}$/gi //new user in Doctor role
+    if (re_003.test(myQueueItem.message.text)) {
+      let reply = "Тази операция още не се поддържа.";
+
+      return await myAxios.post('/pa/send_message', {
+        "receiver": myQueueItem.sender.id,
+        "min.api.version": 1,
+        "type": "text",
+        "sender": { "name": "Асистент" },
+        "text": reply
+      })
+        .then(res => { context.log.verbose(res) })
+        .catch(error => { context.log.error(error) })
     }
   }
   else
