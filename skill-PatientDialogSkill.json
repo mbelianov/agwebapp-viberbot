@@ -1,0 +1,577 @@
+{
+  "intents": [
+    {
+      "intent": "CheckExamResults",
+      "examples": [
+        {
+          "text": "готов ли е резултата от прегледа ми"
+        },
+        {
+          "text": "Здравейте интересувам се от резултата от прегледа ми"
+        },
+        {
+          "text": "искам да разбера резултата от прегледа си"
+        },
+        {
+          "text": "какъв е резултата от прегледа ми"
+        },
+        {
+          "text": "може ли да проверя резултата от прегледа си"
+        },
+        {
+          "text": "преглед"
+        }
+      ],
+      "description": "Handles intent from the patient to check the results from his/her exam"
+    },
+    {
+      "intent": "experimental",
+      "examples": [
+        {
+          "text": "experiment"
+        },
+        {
+          "text": "experimental"
+        }
+      ],
+      "description": ""
+    },
+    {
+      "intent": "hello",
+      "examples": [
+        {
+          "text": "добър ден"
+        },
+        {
+          "text": "здравей"
+        },
+        {
+          "text": "здравейте"
+        },
+        {
+          "text": "привет"
+        }
+      ],
+      "description": "Начален поздрав"
+    },
+    {
+      "intent": "help",
+      "examples": [
+        {
+          "text": "имам нужда от помощ"
+        },
+        {
+          "text": "какви услуги предлагаш"
+        },
+        {
+          "text": "какво да правя"
+        },
+        {
+          "text": "Какво можеш да правиш."
+        },
+        {
+          "text": "какво си ти"
+        },
+        {
+          "text": "как да попитам"
+        },
+        {
+          "text": "не съм сигурен какво да попитам"
+        },
+        {
+          "text": "не съм сигурна какво да попитам"
+        },
+        {
+          "text": "помощ"
+        }
+      ],
+      "description": "general help"
+    },
+    {
+      "intent": "No",
+      "examples": [
+        {
+          "text": "Не"
+        }
+      ],
+      "description": ""
+    },
+    {
+      "intent": "start_over",
+      "examples": [
+        {
+          "text": "да започнем отново"
+        },
+        {
+          "text": "отказ"
+        },
+        {
+          "text": "отказвам се"
+        }
+      ],
+      "description": "Пациента иска да започнем разговора отново"
+    },
+    {
+      "intent": "Yes",
+      "examples": [
+        {
+          "text": "Да"
+        }
+      ],
+      "description": ""
+    }
+  ],
+  "entities": [
+    {
+      "entity": "patientEGN",
+      "values": [
+        {
+          "type": "patterns",
+          "value": "EGN",
+          "patterns": [
+            "\\d{2}[0-2,4][0-9][0-3]\\d{5}"
+          ]
+        }
+      ],
+      "fuzzy_match": true
+    },
+    {
+      "entity": "secretKey",
+      "values": [
+        {
+          "type": "patterns",
+          "value": "simple",
+          "patterns": [
+            "[A-Z]{2}-[a-f0-9]{6}",
+            "X[A-Za-z0-9]{4}"
+          ]
+        }
+      ],
+      "fuzzy_match": true
+    }
+  ],
+  "metadata": {
+    "api_version": {
+      "major_version": "v2",
+      "minor_version": "2018-11-08"
+    }
+  },
+  "webhooks": [
+    {
+      "url": "https://us-central1-graphite-post-275019.cloudfunctions.net/function-4",
+      "name": "main_webhook",
+      "headers": [
+        {
+          "name": "X-Require-Whisk-Auth",
+          "value": "7409316069748604"
+        }
+      ]
+    }
+  ],
+  "dialog_nodes": [
+    {
+      "type": "standard",
+      "title": "Anything else",
+      "output": {
+        "generic": [
+          {
+            "values": [
+              {
+                "text": "Извинете, не Ви разбрах."
+              },
+              {
+                "text": "Съжалявам, не Ви разбрах."
+              }
+            ],
+            "response_type": "text",
+            "selection_policy": "sequential"
+          },
+          {
+            "values": [
+              {
+                "text": "Моля попитайте отново или попитайте за помощ."
+              }
+            ],
+            "response_type": "text",
+            "selection_policy": "sequential"
+          }
+        ]
+      },
+      "conditions": "anything_else",
+      "dialog_node": "Anything else",
+      "previous_sibling": "node_6_1637495651119",
+      "disambiguation_opt_out": true
+    },
+    {
+      "type": "event_handler",
+      "output": {
+        "generic": [
+          {
+            "values": [
+              {
+                "text": "Добре, започваме от начало!"
+              }
+            ],
+            "response_type": "text"
+          }
+        ]
+      },
+      "parent": "slot_6_1637523122849",
+      "context": {
+        "patientEGN": null,
+        "confirmation": null
+      },
+      "conditions": "#No",
+      "event_name": "filled",
+      "dialog_node": "handler_10_1637527666434",
+      "previous_sibling": "handler_7_1637524853568"
+    },
+    {
+      "type": "event_handler",
+      "output": {
+        "generic": [
+          {
+            "values": [
+              {
+                "text": "За да мога да проверя резултата от Вашия преглед ще ми е нужно Вашето ЕГН. Моля въведете ЕГН."
+              }
+            ],
+            "response_type": "text",
+            "selection_policy": "sequential"
+          }
+        ]
+      },
+      "parent": "node_6_1637495651119",
+      "event_name": "focus",
+      "dialog_node": "handler_1_1637521578768",
+      "previous_sibling": "response_9_1637607580348"
+    },
+    {
+      "type": "event_handler",
+      "output": {
+        "generic": [
+          {
+            "values": [
+              {
+                "text": "ЕГН - Единен граждански номер. Състои се от десет цифри, комбинация от Вашата роожденна дата, трицифрен код и контролно число. Ако желаете да се откажете от проверката, можете да го направите чрез думата \"отказ\""
+              }
+            ],
+            "response_type": "text",
+            "selection_policy": "sequential"
+          }
+        ]
+      },
+      "parent": "slot_2_1637521579136",
+      "next_step": {
+        "behavior": "reprompt"
+      },
+      "conditions": "#help || $counter_wrong_egn > 1",
+      "event_name": "nomatch",
+      "dialog_node": "handler_1_1637606389491",
+      "previous_sibling": "handler_9_1637521579161"
+    },
+    {
+      "type": "event_handler",
+      "output": {},
+      "parent": "slot_2_1637521579136",
+      "context": {
+        "patientEGN": "@patientEGN.literal"
+      },
+      "conditions": "@patientEGN",
+      "event_name": "input",
+      "dialog_node": "handler_3_1637521579161"
+    },
+    {
+      "type": "event_handler",
+      "output": {
+        "generic": [
+          {
+            "values": [
+              {
+                "text": "Моля потвърдете ЕГН: $patientEGN"
+              }
+            ],
+            "response_type": "text",
+            "selection_policy": "sequential"
+          }
+        ]
+      },
+      "parent": "slot_6_1637523122849",
+      "event_name": "focus",
+      "dialog_node": "handler_3_1637523122850",
+      "previous_sibling": "handler_9_1637523122850"
+    },
+    {
+      "type": "event_handler",
+      "output": {
+        "generic": [
+          {
+            "values": [
+              {
+                "text": "ОК. Спираме до тук."
+              }
+            ],
+            "response_type": "text"
+          }
+        ]
+      },
+      "parent": "node_6_1637495651119",
+      "next_step": {
+        "behavior": "skip_all_slots"
+      },
+      "conditions": "#start_over",
+      "event_name": "generic",
+      "dialog_node": "handler_3_1637606896853"
+    },
+    {
+      "type": "event_handler",
+      "output": {
+        "generic": [
+          {
+            "values": [
+              {
+                "text": "Моля отговорете с ДА или НЕ"
+              }
+            ],
+            "response_type": "text"
+          }
+        ]
+      },
+      "parent": "slot_6_1637523122849",
+      "conditions": "true",
+      "event_name": "nomatch",
+      "dialog_node": "handler_7_1637524853568",
+      "previous_sibling": "handler_3_1637523122850"
+    },
+    {
+      "type": "event_handler",
+      "output": {
+        "generic": [
+          {
+            "values": [
+              {
+                "text": "Не мога да разпозная Вашето ЕГН."
+              }
+            ],
+            "response_type": "text",
+            "selection_policy": "sequential"
+          }
+        ]
+      },
+      "parent": "slot_2_1637521579136",
+      "context": {
+        "counter_wrong_egn": "<? context['counter_wrong_egn'] + 1 ?>"
+      },
+      "next_step": {
+        "behavior": "reprompt"
+      },
+      "conditions": "true",
+      "event_name": "nomatch",
+      "dialog_node": "handler_8_1637617905933",
+      "previous_sibling": "handler_1_1637606389491"
+    },
+    {
+      "type": "event_handler",
+      "output": {
+        "generic": [
+          {
+            "values": [
+              {
+                "text": "Моля, въведете ЕГН."
+              }
+            ],
+            "response_type": "text",
+            "selection_policy": "sequential"
+          }
+        ]
+      },
+      "parent": "slot_2_1637521579136",
+      "context": {},
+      "event_name": "focus",
+      "dialog_node": "handler_9_1637521579161",
+      "previous_sibling": "handler_3_1637521579161"
+    },
+    {
+      "type": "event_handler",
+      "output": {},
+      "parent": "slot_6_1637523122849",
+      "context": {
+        "confirmation": "(#Yes || #No) && slot_in_focus"
+      },
+      "conditions": "(#Yes || #No) && slot_in_focus",
+      "event_name": "input",
+      "dialog_node": "handler_9_1637523122850"
+    },
+    {
+      "type": "frame",
+      "title": "Проверка резултат от преглед",
+      "metadata": {
+        "_customization": {
+          "mcr": true
+        }
+      },
+      "conditions": "#CheckExamResults",
+      "digress_in": "does_not_return",
+      "dialog_node": "node_6_1637495651119",
+      "previous_sibling": "node_9_1587274849243"
+    },
+    {
+      "type": "standard",
+      "title": "Помощ",
+      "output": {
+        "generic": [
+          {
+            "values": [
+              {
+                "text": "Аз съм цифровия асистент на доктор Арабаджикова. Все още се обучавам и не всичко разбирам. "
+              }
+            ],
+            "response_type": "text",
+            "selection_policy": "sequential"
+          },
+          {
+            "values": [
+              {
+                "text": "Ако искате да раберете резултата от прегледа си, просто попитайте \"какъв е резултата от прегледа ми\""
+              }
+            ],
+            "response_type": "text",
+            "selection_policy": "sequential"
+          }
+        ]
+      },
+      "conditions": "#help",
+      "dialog_node": "node_9_1587274849243",
+      "previous_sibling": "Welcome"
+    },
+    {
+      "type": "response_condition",
+      "output": {
+        "generic": [
+          {
+            "values": [
+              {
+                "text": "Заповядайте отново."
+              }
+            ],
+            "response_type": "text",
+            "selection_policy": "sequential"
+          }
+        ]
+      },
+      "parent": "node_6_1637495651119",
+      "conditions": "has_skipped_slots",
+      "dialog_node": "response_7_1637607742997",
+      "previous_sibling": "handler_3_1637606896853"
+    },
+    {
+      "type": "response_condition",
+      "output": {
+        "generic": [
+          {
+            "values": [
+              {
+                "text": "Благодаря. Изчакайте. Правя проверка..."
+              }
+            ],
+            "response_type": "text",
+            "selection_policy": "sequential"
+          }
+        ]
+      },
+      "parent": "node_6_1637495651119",
+      "dialog_node": "response_9_1637607580348",
+      "previous_sibling": "response_7_1637607742997"
+    },
+    {
+      "type": "slot",
+      "output": {},
+      "parent": "node_6_1637495651119",
+      "variable": "$patientEGN",
+      "dialog_node": "slot_2_1637521579136",
+      "previous_sibling": "handler_1_1637521578768"
+    },
+    {
+      "type": "slot",
+      "output": {},
+      "parent": "node_6_1637495651119",
+      "variable": "$confirmation",
+      "dialog_node": "slot_6_1637523122849",
+      "previous_sibling": "slot_2_1637521579136"
+    },
+    {
+      "type": "standard",
+      "title": "Начало",
+      "output": {
+        "generic": [
+          {
+            "values": [
+              {
+                "text": "Здравейте. Аз съм цифровият асистент на доктор Арабаджикова. "
+              }
+            ],
+            "response_type": "text",
+            "selection_policy": "multiline"
+          },
+          {
+            "title": "Обучена съм да разговарям с Вас по следните теми:",
+            "options": [
+              {
+                "label": "Проверка резултат от преглед",
+                "value": {
+                  "input": {
+                    "text": "Проверка резултат от преглед"
+                  }
+                }
+              }
+            ],
+            "response_type": "option"
+          },
+          {
+            "values": [
+              {
+                "text": "Как мога да Ви помогна?"
+              }
+            ],
+            "response_type": "text",
+            "selection_policy": "sequential"
+          }
+        ]
+      },
+      "context": {
+        "counter_wrong_egn": 0
+      },
+      "conditions": "welcome || #hello",
+      "dialog_node": "Welcome"
+    }
+  ],
+  "counterexamples": [
+    {
+      "text": "моето ЕГН е 7603254702"
+    }
+  ],
+  "system_settings": {
+    "off_topic": {
+      "enabled": true
+    },
+    "disambiguation": {
+      "prompt": "Did you mean:",
+      "enabled": true,
+      "randomize": true,
+      "max_suggestions": 5,
+      "suggestion_text_policy": "title",
+      "none_of_the_above_prompt": "None of the above"
+    },
+    "system_entities": {
+      "enabled": true
+    },
+    "human_agent_assist": {
+      "prompt": "Did you mean:"
+    },
+    "spelling_auto_correct": true
+  },
+  "learning_opt_out": false,
+  "name": "PatientDialogSkill",
+  "language": "en",
+  "description": ""
+}
