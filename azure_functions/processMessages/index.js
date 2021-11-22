@@ -1,6 +1,9 @@
 const axios = require('axios');
 const Api2Pdf = require('api2pdf');
 const bodimed = require('./helpers/bodimed_connect');
+const AssistantV2 = require('ibm-watson/assistant/v2');
+const { IamAuthenticator } = require('ibm-watson/auth');
+const { atLeastOne } = require('ibm-cloud-sdk-core');
 
 const myAxios = axios.create({
   baseURL: 'https://chatapi.viber.com',
@@ -16,18 +19,23 @@ let richMediaContent = {
   "Buttons": []
 }
 
+const assistant = new AssistantV2({
+  authenticator: new IamAuthenticator({ apikey: process.env.IBM_WATSON_API_KEY }),
+  serviceUrl: 'https://api.eu-de.assistant.watson.cloud.ibm.com',
+  version: '2021-06-14'
+});
+
 module.exports = async function (context, myQueueItem) {
   let doctors = context.bindings.rDoctors;
-
 
   if (myQueueItem.event === "message") {
     context.log('Processing new mesasage from the queue');
     context.log(myQueueItem);
 
-    let tracking_data = myQueueItem.message.tracking_data ? JSON.parse(myQueueItem.message.tracking_data) : {};
+    let tracking_data = myQueueItem.message.tracking_data ? JSON.parse(myQueueItem.message.tracking_data) : { timestamp: 0, data: {} };
 
-    if (tracking_data && tracking_data.timestamp < (Date.now() - 600 * 1000)) // timeout
-      tracking_data.data = "";
+    if (tracking_data.timestamp < (Date.now() - 270 * 1000)) // 3 min timeout
+      tracking_data.data = {};
 
     let i = doctors.findIndex(doctor => doctor.viber_id == myQueueItem.sender.id);
 
@@ -102,7 +110,7 @@ module.exports = async function (context, myQueueItem) {
         reply = "Достигнат максимален брой оторизирани потребители";
       }
       else {
-        if (i == -1){
+        if (i == -1) {
           context.bindings.wDoctors = [];
           context.bindings.wDoctors.push({
             PartitionKey: "Partition",
@@ -129,7 +137,7 @@ module.exports = async function (context, myQueueItem) {
         .catch(error => { context.log.error(error) })
     }
 
-    let re_003 = /^delete uin:[0-9]{10}$/gi //new user in Doctor role
+    let re_003 = /^delete uin:[0-9]{10}$/gi //delete this profile from doctors table
     if (re_003.test(myQueueItem.message.text)) {
       let reply = "Тази операция още не се поддържа.";
 
@@ -143,6 +151,82 @@ module.exports = async function (context, myQueueItem) {
         .then(res => { context.log.verbose(res) })
         .catch(error => { context.log.error(error) })
     }
+
+    let watson = tracking_data.data.watson ? tracking_data.data.watson : {}
+    let responses
+    if (!watson.session_id) {
+      await assistant.createSession({
+        assistantId: process.env.IBM_WATSON_ASSISTANT_ID
+      })
+        .then(response => {
+          context.log.verbose("opening new Watson session:", JSON.stringify(response.result, null, 2));
+          watson.session_id = response.result.session_id;
+        })
+        .catch(err => { context.log.error(err) });
+    }
+
+    await assistant.message({
+      input: {
+        text: myQueueItem.message.text,
+        //intents: tracking_data.data.watson_intents,
+        options: { return_context: true },
+      },
+      userId: myQueueItem.sender.id,
+      assistantId: process.env.IBM_WATSON_ASSISTANT_ID,
+      sessionId: watson.session_id
+    })
+      .then(async (response) => {
+        context.log("response from watson:", JSON.stringify(response.result, null, 2));
+        watson.intents = response.result.output.intents;
+        responses = response.result.output.generic
+        tracking_data.data.watson = watson;
+        tracking_data.timestamp = Date.now();
+        for (i = 0; i < responses.length; i++) {//context.log(responses[i].text)
+          if (responses[i].response_type === "option"){
+            let richMediaContent = {"ButtonsGroupRows":2,"ButtonsGroupColumns":4,"Buttons": [] }
+            responses[i].options.forEach((option, index) => {
+              richMediaContent.Buttons.push({
+                "ActionType": "reply",
+                "ActionBody": option.value.input.text,
+                "Text":option.label
+              })
+            })
+            await myAxios.post('/pa/send_message', {
+              "receiver": myQueueItem.sender.id,
+              "min.api.version": 1,
+              "type": "text",
+              "sender": { "name": "Асистент" },
+              "text": `${responses[i].title}`
+            })
+              .then(res => { context.log.verbose(res) })
+              .catch(error => { context.log.error(error) })
+    
+            await myAxios.post('/pa/send_message', {
+              "receiver": myQueueItem.sender.id,
+              "min_api_version": 7,
+              "type": "rich_media",
+              "sender": { "name": "Асистент" },
+              "rich_media": richMediaContent
+            })
+              .then(res => { context.log.verbose(res) })
+              .catch(error => { context.log.error(error) })
+          }
+
+          if (responses[i].response_type === "text"){
+            await myAxios.post('/pa/send_message', {
+              "receiver": myQueueItem.sender.id,
+              "min.api.version": 1,
+              "type": "text",
+              "sender": { "name": "Асистент" },
+              "text": responses[i].text,
+              "tracking_data": JSON.stringify(tracking_data)
+            })
+              .then(res => { context.log.verbose(res) })
+              .catch(error => { context.log.error(error) })
+          }
+        }
+      })
+      .catch(err => { context.log.error("error occured while talking to watson:", err) });
   }
   else
     context.log("no new message")

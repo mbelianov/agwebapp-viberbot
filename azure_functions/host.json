@@ -3,6 +3,7 @@
   "logging": {
     "logLevel": {
       "Function.processMessages": "Information",
+      "Function.healthcheck": "Information",
       "default": "None"
     },
     "applicationInsights": {
