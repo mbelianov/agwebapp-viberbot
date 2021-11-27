@@ -321,7 +321,8 @@
       },
       "conditions": "#start_over",
       "event_name": "generic",
-      "dialog_node": "handler_3_1637606896853"
+      "dialog_node": "handler_3_1637606896853",
+      "previous_sibling": "node_5_1637791528322"
     },
     {
       "type": "event_handler",
@@ -403,6 +404,28 @@
       "dialog_node": "handler_9_1637523122850"
     },
     {
+      "type": "standard",
+      "title": "Error fetching results",
+      "output": {
+        "generic": [
+          {
+            "values": [
+              {
+                "text": "that is an error"
+              }
+            ],
+            "response_type": "text",
+            "selection_policy": "sequential"
+          }
+        ]
+      },
+      "parent": "node_6_1637495651119",
+      "conditions": "true",
+      "dialog_node": "node_5_1637791528322",
+      "previous_sibling": "node_6_1637791254632",
+      "disambiguation_opt_out": true
+    },
+    {
       "type": "frame",
       "title": "Проверка резултат от преглед",
       "metadata": {
@@ -414,6 +437,27 @@
       "digress_in": "does_not_return",
       "dialog_node": "node_6_1637495651119",
       "previous_sibling": "node_9_1587274849243"
+    },
+    {
+      "type": "standard",
+      "title": "Interpret results",
+      "output": {
+        "generic": [
+          {
+            "values": [
+              {
+                "text": "That is OK - <$urlExamResultReport>"
+              }
+            ],
+            "response_type": "text",
+            "selection_policy": "sequential"
+          }
+        ]
+      },
+      "parent": "node_6_1637495651119",
+      "conditions": "$urlExamResultReport",
+      "dialog_node": "node_6_1637791254632",
+      "disambiguation_opt_out": true
     },
     {
       "type": "standard",
@@ -471,7 +515,7 @@
           {
             "values": [
               {
-                "text": "Благодаря. Изчакайте. Правя проверка..."
+                "text": "Изчакайте. Правя проверка..."
               }
             ],
             "response_type": "text",
@@ -480,6 +524,17 @@
         ]
       },
       "parent": "node_6_1637495651119",
+      "actions": [
+        {
+          "name": "getExamResultReport",
+          "type": "client",
+          "parameters": {
+            "patient_id": "$patientEGN",
+            "patient_id_type": "EGN"
+          },
+          "result_variable": "urlExamResultReport"
+        }
+      ],
       "dialog_node": "response_9_1637607580348",
       "previous_sibling": "response_7_1637607742997"
     },
@@ -539,6 +594,8 @@
         ]
       },
       "context": {
+        "patientEGN": null,
+        "confirmation": null,
         "counter_wrong_egn": 0
       },
       "conditions": "welcome || #hello",
