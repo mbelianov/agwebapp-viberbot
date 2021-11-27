@@ -50,7 +50,7 @@ exports.getResults = (context, query) => {
  * @param untilDate start date of the period we search
  * @return JSON array with all found patients
  */
-exports.getPatients = (context, name) => {
+exports.getPatients = (context, filter_string, filter_type = "name") => {
   context.log('In Bodimed.getPatients');
 
   let headersList = {
@@ -90,10 +90,17 @@ exports.getPatients = (context, name) => {
     isActive: false
   };
 
-  if (name) {
+
+  if (filter_type.toLowerCase() === "name"){
     filter.isActive = true,
     filter.key = 'bodimed_patient_name',
-    filter.value = name
+    filter.value = filter_string
+  }
+
+  if (filter_type.toLowerCase() === "egn"){
+    filter.isActive = true,
+    filter.key = 'bodimed_patient_egn',
+    filter.value = filter_string
   }
 
   return axios.request(reqOptions)

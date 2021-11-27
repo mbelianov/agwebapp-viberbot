@@ -3,7 +3,7 @@ const Api2Pdf = require('api2pdf');
 const bodimed = require('./helpers/bodimed_connect');
 const AssistantV2 = require('ibm-watson/assistant/v2');
 const { IamAuthenticator } = require('ibm-watson/auth');
-const { atLeastOne } = require('ibm-cloud-sdk-core');
+
 
 const myAxios = axios.create({
   baseURL: 'https://chatapi.viber.com',
@@ -153,7 +153,7 @@ module.exports = async function (context, myQueueItem) {
     }
 
     let watson = tracking_data.data.watson ? tracking_data.data.watson : {}
-    let responses
+    //let responses
     if (!watson.session_id) {
       await assistant.createSession({
         assistantId: process.env.IBM_WATSON_ASSISTANT_ID
@@ -165,6 +165,8 @@ module.exports = async function (context, myQueueItem) {
         .catch(err => { context.log.error(err) });
     }
 
+    await sendMessageToWatson(myQueueItem.sender.id, watson.session_id, myQueueItem.message.text, null, context);
+    /*
     await assistant.message({
       input: {
         text: myQueueItem.message.text,
@@ -175,20 +177,20 @@ module.exports = async function (context, myQueueItem) {
       assistantId: process.env.IBM_WATSON_ASSISTANT_ID,
       sessionId: watson.session_id
     })
-      .then(async (response) => {
-        context.log("response from watson:", JSON.stringify(response.result, null, 2));
-        watson.intents = response.result.output.intents;
-        responses = response.result.output.generic
+      .then(async (resp) => {
+        context.log("response from watson:", JSON.stringify(resp.result, null, 2));
+        watson.intents = resp.result.output.intents;
+        let responses = resp.result.output.generic
         tracking_data.data.watson = watson;
         tracking_data.timestamp = Date.now();
-        for (i = 0; i < responses.length; i++) {//context.log(responses[i].text)
-          if (responses[i].response_type === "option"){
-            let richMediaContent = {"ButtonsGroupRows":2,"ButtonsGroupColumns":4,"Buttons": [] }
+        for (i = 0; Array.isArray(responses) && i < responses.length; i++) {//context.log(responses[i].text)
+          if (responses[i].response_type === "option") {
+            let richMediaContent = { "ButtonsGroupRows": 2, "ButtonsGroupColumns": 4, "Buttons": [] }
             responses[i].options.forEach((option, index) => {
               richMediaContent.Buttons.push({
                 "ActionType": "reply",
                 "ActionBody": option.value.input.text,
-                "Text":option.label
+                "Text": option.label
               })
             })
             await myAxios.post('/pa/send_message', {
@@ -200,7 +202,7 @@ module.exports = async function (context, myQueueItem) {
             })
               .then(res => { context.log.verbose(res) })
               .catch(error => { context.log.error(error) })
-    
+
             await myAxios.post('/pa/send_message', {
               "receiver": myQueueItem.sender.id,
               "min_api_version": 7,
@@ -212,7 +214,7 @@ module.exports = async function (context, myQueueItem) {
               .catch(error => { context.log.error(error) })
           }
 
-          if (responses[i].response_type === "text"){
+          if (responses[i].response_type === "text") {
             await myAxios.post('/pa/send_message', {
               "receiver": myQueueItem.sender.id,
               "min.api.version": 1,
@@ -225,9 +227,162 @@ module.exports = async function (context, myQueueItem) {
               .catch(error => { context.log.error(error) })
           }
         }
+        if (resp.result.output.actions)
+          if (resp.result.output.actions[0].type === "client")
+            if (resp.result.output.actions[0].name === "getExamResultReport") {
+              let patientId = resp.result.output.actions[0].parameters.patient_id
+              let resultVar = resp.result.output.actions[0].result_variable
+              let cont = { 'skills': { 'main skill': { 'user_defined': {} } } }
+              cont['skills']['main skill']['user_defined'][resultVar] = `this should be the result for ${patientId}!`
+              await assistant.message({
+                input: {
+                  text: "",
+                  options: { return_context: true },
+                },
+                userId: myQueueItem.sender.id,
+                assistantId: process.env.IBM_WATSON_ASSISTANT_ID,
+                sessionId: watson.session_id,
+                context: cont
+              })
+                .then((resp) => { context.log("response from watson:", JSON.stringify(resp.result, null, 2)) })
+                .catch(err => { context.log.error("error occured while talking to watson:", err) });
+            }
       })
       .catch(err => { context.log.error("error occured while talking to watson:", err) });
+      */
   }
   else
     context.log("no new message")
 };
+
+async function sendMessageToWatson(userId, sessionId, messageInput, wa_context, azf_context) {
+  await assistant.message({
+    input: {
+      text: messageInput,
+      //intents: tracking_data.data.watson_intents,
+      options: { return_context: true },
+    },
+    userId: userId,
+    assistantId: process.env.IBM_WATSON_ASSISTANT_ID,
+    sessionId: sessionId,
+    context: wa_context
+  })
+    .then(async (response) => {
+      azf_context.log("Watson response:", JSON.stringify(response.result, null, 2));
+      await processWatsonResponse(response.result, azf_context);
+    })
+    .catch(err => { azf_context.log.error("error occured while talking to watson:", err) });
+}
+
+async function processWatsonResponse(response, azf_context) {
+  let intents = response.output.intents;
+  let replies = response.output.generic
+  let sessionId = response.context.global.session_id
+  let userId = response.user_id
+  let tracking_data = {
+    data: {
+      watson: {
+        session_id: sessionId,
+        intents: intents
+      }
+    },
+    timestamp: Date.now()
+  }
+
+  for (i = 0; Array.isArray(replies) && i < replies.length; i++) {//context.log(responses[i].text)
+    if (replies[i].response_type === "option") {
+      let richMediaContent = { "ButtonsGroupRows": 2, "ButtonsGroupColumns": 4, "Buttons": [] }
+      replies[i].options.forEach((option) => {
+        richMediaContent.Buttons.push({
+          "ActionType": "reply",
+          "ActionBody": option.value.input.text,
+          "Text": option.label
+        })
+      })
+
+      await sendViberMessage(userId, replies[i].title, tracking_data)
+      await sendViberRichMedia(userId, richMediaContent, tracking_data)
+    }
+
+    if (replies[i].response_type === "text") {
+      await sendViberMessage(userId, replies[i].text, tracking_data)
+    }
+  }
+
+  if (response.output.actions)
+    if (response.output.actions[0].type === "client")
+      if (response.output.actions[0].name === "getExamResultReport") {
+        let patientId = response.output.actions[0].parameters.patient_id
+        let patientId_type = response.output.actions[0].parameters.patient_id_type
+        let resultVar = response.output.actions[0].result_variable
+        let wa_context = { 'skills': { 'main skill': { 'user_defined': {} } } }
+        let resultReports = await getExamResultReports(azf_context, patientId, patientId_type)
+        await sendViberUrlMessages(userId, resultReports, tracking_data)
+        if (resultReports.length > 0)
+          wa_context['skills']['main skill']['user_defined'][resultVar] = `Това бяха вашите резултати!`
+        else
+          wa_context['skills']['main skill']['user_defined'][resultVar] = `Не намерих резултати`
+        await sendMessageToWatson(userId, sessionId, "", wa_context, azf_context)
+      }
+}
+
+async function getExamResultReports(azf_context, patientId, patientId_type) {
+  const patients = await bodimed.getPatients(azf_context, patientId, patientId_type)
+  //azf_context.log(patients)
+  var a2pClient = new Api2Pdf(process.env.API2PDF_KEY);
+
+  return await Promise.all(patients.patientsList.map(async (patient) => {
+    const result = await bodimed.getResults(azf_context, `?idnap=${patient.bodimed_patient_id}&pass=${patient.bodimed_patient_password}`)
+    const reportUlr = await a2pClient.chromeHtmlToImage(result.result)
+      .then(async (response) => { 
+        return response.FileUrl;
+      })
+      .catch(error => {
+        azf_context.log.error("api2pdf error:", error);
+        return null
+      })
+
+      return reportUlr
+  }))
+}
+
+async function sendViberUrlMessages(userId, urlList, tracking_data = ""){
+  await Promise.all(urlList.map(async (url) =>{
+    await myAxios.post( '/pa/send_message', {
+      "receiver": userId,
+      "min_api_version": 1,
+      "type": "url",
+      "sender": { "name": "Асистент" },
+      "media": url,
+      "tracking_data": JSON.stringify(tracking_data)
+    })
+      .then(res => { console.debug("sendViberUrlMessage POST error ", res) })
+      .catch(error => { console.error("sendViberUrlMessage POST error ", error) })
+  }))
+}
+
+async function sendViberMessage(userId, messageInput, tracking_data = "") {
+  await myAxios.post('/pa/send_message', {
+    "receiver": userId,
+    "min.api.version": 1,
+    "type": "text",
+    "sender": { "name": "Асистент" },
+    "text": messageInput,
+    "tracking_data": JSON.stringify(tracking_data)
+  })
+    .then(res => { console.debug("sendViberMessage POST response", res) })
+    .catch(error => { console.error("sendViberMessage POST error", error) })
+}
+
+async function sendViberRichMedia(userId, richmedia, tracking_data = "") {
+  await myAxios.post('/pa/send_message', {
+    "receiver": userId,
+    "min_api_version": 7,
+    "type": "rich_media",
+    "sender": { "name": "Асистент" },
+    "rich_media": richmedia,
+    "tracking_data": JSON.stringify(tracking_data)
+  })
+    .then(res => { console.debug("sendViberRichMedia POST response", res) })
+    .catch(error => { console.error("sendViberRichMedia POST error", error) })
+}
