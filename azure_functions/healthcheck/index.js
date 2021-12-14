@@ -9,7 +9,7 @@ module.exports = async function (context, req) {
     let result = await bodimed.getResults(context, `?idnap=${patient.bodimed_patient_id}&pass=${patient.bodimed_patient_password}`)
     results.push(result)
   }
-  context.log (results[0].outcome)
+  context.log (results)
   
   const name = (req.query.name || (req.body && req.body.name));
   const responseMessage = name

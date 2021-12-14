@@ -4,22 +4,22 @@
       "intent": "CheckExamResults",
       "examples": [
         {
-          "text": "готов ли е резултата от прегледа ми"
+          "text": "готов ли е резултата ми"
         },
         {
-          "text": "Здравейте интересувам се от резултата от прегледа ми"
+          "text": "Здравейте интересувам се от резултата ми"
         },
         {
-          "text": "искам да разбера резултата от прегледа си"
+          "text": "искам да разбера резултата си"
         },
         {
-          "text": "какъв е резултата от прегледа ми"
+          "text": "какъв е резултата ми"
         },
         {
-          "text": "може ли да проверя резултата от прегледа си"
+          "text": "може ли да проверя резултата си"
         },
         {
-          "text": "преглед"
+          "text": "резултат"
         }
       ],
       "description": "Handles intent from the patient to check the results from his/her exam"
@@ -35,6 +35,42 @@
         }
       ],
       "description": ""
+    },
+    {
+      "intent": "genericConsultation",
+      "examples": [
+        {
+          "text": "не знам какво ми е"
+        },
+        {
+          "text": "не съм сигурна"
+        },
+        {
+          "text": "общ преглед"
+        }
+      ],
+      "description": "Час за обща консултация"
+    },
+    {
+      "intent": "gynecologyExam",
+      "examples": [
+        {
+          "text": "гинекологичен преглед"
+        },
+        {
+          "text": "имам бяло течение"
+        },
+        {
+          "text": "имам течение"
+        },
+        {
+          "text": "час за гинеколог"
+        },
+        {
+          "text": "час за гинекологичен преглед"
+        }
+      ],
+      "description": "Час за гинекологичен преглед"
     },
     {
       "intent": "hello",
@@ -88,6 +124,108 @@
       "description": "general help"
     },
     {
+      "intent": "IamPregnant",
+      "examples": [
+        {
+          "text": "бременна съм"
+        },
+        {
+          "text": "бременна съм в първи триместър",
+          "mentions": [
+            {
+              "entity": "pregnancyPeriod",
+              "location": [
+                15,
+                20
+              ]
+            },
+            {
+              "entity": "pregnancyMeasPeriod",
+              "location": [
+                21,
+                30
+              ]
+            }
+          ]
+        },
+        {
+          "text": "бременна съм в трети месец",
+          "mentions": [
+            {
+              "entity": "pregnancyPeriod",
+              "location": [
+                15,
+                20
+              ]
+            },
+            {
+              "entity": "pregnancyMeasPeriod",
+              "location": [
+                21,
+                26
+              ]
+            }
+          ]
+        },
+        {
+          "text": "бременн съм в първия месец",
+          "mentions": [
+            {
+              "entity": "pregnancyPeriod",
+              "location": [
+                14,
+                20
+              ]
+            },
+            {
+              "entity": "pregnancyMeasPeriod",
+              "location": [
+                21,
+                26
+              ]
+            }
+          ]
+        }
+      ],
+      "description": ""
+    },
+    {
+      "intent": "morfology",
+      "examples": [
+        {
+          "text": "Искам да запиша час за морфология"
+        },
+        {
+          "text": "морфология"
+        },
+        {
+          "text": "правите ли морфологични прегледи"
+        }
+      ],
+      "description": ""
+    },
+    {
+      "intent": "newAppointment",
+      "examples": [
+        {
+          "text": "имате ли свободни часове"
+        },
+        {
+          "text": "искам да запиша нов час"
+        },
+        {
+          "text": "искам да си запиша час"
+        },
+        {
+          "text": "искам за запазя час при вас"
+        },
+        {
+          "text": "кога мога да дойда да ме прегледате"
+        }
+      ],
+      "description": "Нов час за преглед"
+    },
+    {
       "intent": "No",
       "examples": [
         {
@@ -123,6 +261,64 @@
   ],
   "entities": [
     {
+      "entity": "appointmentType",
+      "values": [
+        {
+          "type": "synonyms",
+          "value": "бременност",
+          "synonyms": []
+        },
+        {
+          "type": "synonyms",
+          "value": "гинекологичен преглед",
+          "synonyms": [
+            "гинекологичен",
+            "гинекология"
+          ]
+        },
+        {
+          "type": "synonyms",
+          "value": "морфологичен преглед",
+          "synonyms": [
+            "морфологичен",
+            "морфология"
+          ]
+        },
+        {
+          "type": "synonyms",
+          "value": "обща консултация",
+          "synonyms": [
+            "консултация"
+          ]
+        },
+        {
+          "type": "synonyms",
+          "value": "преглед втори триместър",
+          "synonyms": [
+            "2ри триместър",
+            "втори триместър"
+          ]
+        },
+        {
+          "type": "synonyms",
+          "value": "преглед първи триместър",
+          "synonyms": [
+            "1ви триместър",
+            "първи триместър"
+          ]
+        },
+        {
+          "type": "synonyms",
+          "value": "преглед трети триместър",
+          "synonyms": [
+            "3ти триместър",
+            "трети триместър"
+          ]
+        }
+      ],
+      "fuzzy_match": true
+    },
+    {
       "entity": "patientEGN",
       "values": [
         {
@@ -130,6 +326,96 @@
           "value": "EGN",
           "patterns": [
             "\\d{2}[0-2,4][0-9][0-3]\\d{5}"
+          ]
+        }
+      ],
+      "fuzzy_match": true
+    },
+    {
+      "entity": "pregnancyMeasPeriod",
+      "values": [
+        {
+          "type": "synonyms",
+          "value": "месец",
+          "synonyms": []
+        },
+        {
+          "type": "synonyms",
+          "value": "седмица",
+          "synonyms": []
+        },
+        {
+          "type": "synonyms",
+          "value": "триместър",
+          "synonyms": []
+        }
+      ],
+      "fuzzy_match": true
+    },
+    {
+      "entity": "pregnancyPeriod",
+      "values": [
+        {
+          "type": "synonyms",
+          "value": "втори",
+          "synonyms": [
+            "втория"
+          ]
+        },
+        {
+          "type": "synonyms",
+          "value": "девети",
+          "synonyms": [
+            "деветия"
+          ]
+        },
+        {
+          "type": "synonyms",
+          "value": "осми",
+          "synonyms": [
+            "осмия"
+          ]
+        },
+        {
+          "type": "synonyms",
+          "value": "пети",
+          "synonyms": [
+            "петия"
+          ]
+        },
+        {
+          "type": "synonyms",
+          "value": "първи",
+          "synonyms": [
+            "първия"
+          ]
+        },
+        {
+          "type": "synonyms",
+          "value": "седми",
+          "synonyms": [
+            "седмия"
+          ]
+        },
+        {
+          "type": "synonyms",
+          "value": "трети",
+          "synonyms": [
+            "третия"
+          ]
+        },
+        {
+          "type": "synonyms",
+          "value": "четвърти",
+          "synonyms": [
+            "четвъртия"
+          ]
+        },
+        {
+          "type": "synonyms",
+          "value": "шести",
+          "synonyms": [
+            "шестия"
           ]
         }
       ],
@@ -199,7 +485,7 @@
       },
       "conditions": "anything_else",
       "dialog_node": "Anything else",
-      "previous_sibling": "node_6_1637495651119",
+      "previous_sibling": "node_5_1639513117814",
       "disambiguation_opt_out": true
     },
     {
@@ -225,6 +511,26 @@
       "event_name": "filled",
       "dialog_node": "handler_10_1637527666434",
       "previous_sibling": "handler_7_1637524853568"
+    },
+    {
+      "type": "event_handler",
+      "output": {
+        "generic": [
+          {
+            "values": [
+              {
+                "text": "Моля уточнете месеца"
+              }
+            ],
+            "response_type": "text",
+            "selection_policy": "sequential"
+          }
+        ]
+      },
+      "parent": "slot_2_1639510827928",
+      "event_name": "focus",
+      "dialog_node": "handler_10_1639510827966",
+      "previous_sibling": "handler_2_1639510827966"
     },
     {
       "type": "event_handler",
@@ -269,6 +575,175 @@
       "event_name": "nomatch",
       "dialog_node": "handler_1_1637606389491",
       "previous_sibling": "handler_9_1637521579161"
+    },
+    {
+      "type": "event_handler",
+      "output": {
+        "generic": [
+          {
+            "values": [
+              {
+                "text": "Моля уточнете какъв вид преглед Ви е необходим или изберете от тези опции."
+              }
+            ],
+            "response_type": "text",
+            "selection_policy": "sequential"
+          },
+          {
+            "title": "Опции",
+            "options": [
+              {
+                "label": "Обща консултация",
+                "value": {
+                  "input": {
+                    "text": "консултация"
+                  }
+                }
+              },
+              {
+                "label": "Гинекология",
+                "value": {
+                  "input": {
+                    "text": "гинеколгичен"
+                  }
+                }
+              },
+              {
+                "label": "Бременност",
+                "value": {
+                  "input": {
+                    "text": "бременност"
+                  }
+                }
+              },
+              {
+                "label": "Морфология",
+                "value": {
+                  "input": {
+                    "text": "морофология"
+                  }
+                }
+              }
+            ],
+            "description": "",
+            "response_type": "option"
+          }
+        ]
+      },
+      "parent": "node_9_1638978557163",
+      "event_name": "focus",
+      "dialog_node": "handler_1_1639173172886",
+      "previous_sibling": "response_1_1639228415629"
+    },
+    {
+      "type": "event_handler",
+      "output": {
+        "generic": [
+          {
+            "values": [
+              {
+                "text": "Моля уточнете вида на прелгеда"
+              }
+            ],
+            "response_type": "text",
+            "selection_policy": "sequential"
+          }
+        ]
+      },
+      "parent": "slot_1_1639173173352",
+      "event_name": "focus",
+      "dialog_node": "handler_1_1639173173387",
+      "previous_sibling": "handler_9_1639173173387"
+    },
+    {
+      "type": "event_handler",
+      "output": {},
+      "parent": "slot_6_1639229238259",
+      "context": {
+        "confirmation": "(#Yes || #No) && slot_in_focus"
+      },
+      "conditions": "(#Yes || #No) && slot_in_focus",
+      "event_name": "input",
+      "dialog_node": "handler_1_1639229238260"
+    },
+    {
+      "type": "event_handler",
+      "output": {
+        "generic": [
+          {
+            "values": [
+              {
+                "text": "Нека потвърдя. Желаете да запишите час за  $appointmentTitle ? Моля потвърдете!"
+              }
+            ],
+            "response_type": "text",
+            "selection_policy": "sequential"
+          }
+        ]
+      },
+      "parent": "slot_6_1639229238259",
+      "event_name": "focus",
+      "dialog_node": "handler_1_1639229238261",
+      "previous_sibling": "handler_1_1639229238260"
+    },
+    {
+      "type": "event_handler",
+      "output": {
+        "generic": [
+          {
+            "values": [
+              {
+                "text": "Добре, да опитаме отново"
+              }
+            ],
+            "response_type": "text",
+            "selection_policy": "sequential"
+          }
+        ]
+      },
+      "parent": "slot_6_1639229238259",
+      "context": {
+        "confirmation": null,
+        "appointmentType": null,
+        "pregnancyPeriod": null,
+        "appointmentTitle": null
+      },
+      "conditions": "#No",
+      "event_name": "filled",
+      "dialog_node": "handler_2_1639229615167",
+      "previous_sibling": "handler_1_1639229238261"
+    },
+    {
+      "type": "event_handler",
+      "output": {
+        "generic": [
+          {
+            "values": [
+              {
+                "text": "Моля уточнете вида на прегледа"
+              }
+            ],
+            "response_type": "text",
+            "selection_policy": "sequential"
+          }
+        ]
+      },
+      "parent": "slot_10_1639236247109",
+      "event_name": "focus",
+      "dialog_node": "handler_2_1639236247111",
+      "previous_sibling": "handler_3_1639236247111"
+    },
+    {
+      "type": "event_handler",
+      "output": {},
+      "parent": "slot_2_1639510827928",
+      "context": {
+        "pregnancyPeriod": "@pregnancyPeriod",
+        "appointmentTitle": "преглед @pregnancyPeriod месец"
+      },
+      "conditions": "@pregnancyPeriod",
+      "event_name": "input",
+      "dialog_node": "handler_2_1639510827966"
     },
     {
       "type": "event_handler",
@@ -323,6 +798,223 @@
       "event_name": "generic",
       "dialog_node": "handler_3_1637606896853",
       "previous_sibling": "node_5_1637791528322"
+    },
+    {
+      "type": "event_handler",
+      "output": {},
+      "parent": "slot_10_1639236247109",
+      "context": {
+        "appointmentType": "morfology",
+        "appointmentTitle": "морфологичен преглед"
+      },
+      "conditions": "@appointmentType:(морфологичен преглед) || #morfology",
+      "event_name": "input",
+      "dialog_node": "handler_3_1639236247111"
+    },
+    {
+      "type": "event_handler",
+      "output": {
+        "generic": [
+          {
+            "values": [
+              {
+                "text": "Вие сте бременна в $pregnancyPeriod месец. Моля потвърдете с Да или Не"
+              }
+            ],
+            "response_type": "text",
+            "selection_policy": "sequential"
+          }
+        ]
+      },
+      "parent": "slot_8_1639511057023",
+      "event_name": "focus",
+      "dialog_node": "handler_3_1639511057024",
+      "previous_sibling": "handler_9_1639511057024"
+    },
+    {
+      "type": "event_handler",
+      "output": {
+        "generic": [
+          {
+            "values": [
+              {
+                "text": "Моля уточнете вида на прелгеда"
+              }
+            ],
+            "response_type": "text",
+            "selection_policy": "sequential"
+          }
+        ]
+      },
+      "parent": "slot_2_1639232415480",
+      "event_name": "focus",
+      "dialog_node": "handler_4_1639232415481",
+      "previous_sibling": "handler_6_1639232415481"
+    },
+    {
+      "type": "event_handler",
+      "output": {
+        "generic": [
+          {
+            "values": [
+              {
+                "text": "Моля уточнете вида на прегледа"
+              }
+            ],
+            "response_type": "text",
+            "selection_policy": "sequential"
+          }
+        ]
+      },
+      "parent": "slot_6_1639240249732",
+      "event_name": "focus",
+      "dialog_node": "handler_4_1639240249734",
+      "previous_sibling": "handler_5_1639240249734"
+    },
+    {
+      "type": "event_handler",
+      "output": {},
+      "parent": "slot_6_1639240735311",
+      "context": {
+        "pregnancyPeriod": "@pregnancyPeriod",
+        "appointmentTitle": "преглед бременност $pregnancyPeriod месец"
+      },
+      "conditions": "@pregnancyPeriod",
+      "event_name": "input",
+      "dialog_node": "handler_4_1639240735312"
+    },
+    {
+      "type": "event_handler",
+      "output": {
+        "generic": [
+          {
+            "values": [
+              {
+                "text": "Моля отговорете с ДА или НЕ"
+              }
+            ],
+            "response_type": "text"
+          }
+        ]
+      },
+      "parent": "slot_6_1639229238259",
+      "conditions": "true",
+      "event_name": "nomatch",
+      "dialog_node": "handler_5_1639229811551",
+      "previous_sibling": "handler_2_1639229615167"
+    },
+    {
+      "type": "event_handler",
+      "output": {
+        "generic": [
+          {
+            "values": [
+              {
+                "text": "Няма проблем. Спираме до тук."
+              }
+            ],
+            "response_type": "text"
+          }
+        ]
+      },
+      "parent": "node_9_1638978557163",
+      "next_step": {
+        "behavior": "skip_all_slots"
+      },
+      "conditions": "#start_over",
+      "event_name": "generic",
+      "dialog_node": "handler_5_1639231698023"
+    },
+    {
+      "type": "event_handler",
+      "output": {},
+      "parent": "slot_6_1639240249732",
+      "context": {
+        "appointmentType": "pregnant"
+      },
+      "conditions": "@appointmentType:бременност || #IamPregnant",
+      "event_name": "input",
+      "dialog_node": "handler_5_1639240249734"
+    },
+    {
+      "type": "event_handler",
+      "output": {
+        "generic": [
+          {
+            "values": [
+              {
+                "text": "Добре, ще попитам пак."
+              }
+            ],
+            "response_type": "text"
+          }
+        ]
+      },
+      "parent": "slot_8_1639511057023",
+      "context": {
+        "confirmation": null,
+        "pregnancyPeriod": null,
+        "appointmentTitle": null
+      },
+      "conditions": "#No",
+      "event_name": "filled",
+      "dialog_node": "handler_5_1639511527989",
+      "previous_sibling": "handler_3_1639511057024"
+    },
+    {
+      "type": "event_handler",
+      "output": {},
+      "parent": "slot_2_1639232415480",
+      "context": {
+        "appointmentType": "generic",
+        "appointmentTitle": "общ преглед/консултация"
+      },
+      "conditions": "@appointmentType:(обща консултация) || #genericConsultation",
+      "event_name": "input",
+      "dialog_node": "handler_6_1639232415481"
+    },
+    {
+      "type": "event_handler",
+      "output": {
+        "generic": [
+          {
+            "values": [
+              {
+                "text": "Моля уточнете месеца"
+              }
+            ],
+            "response_type": "text",
+            "selection_policy": "sequential"
+          }
+        ]
+      },
+      "parent": "slot_6_1639240735311",
+      "event_name": "focus",
+      "dialog_node": "handler_6_1639240735312",
+      "previous_sibling": "handler_4_1639240735312"
+    },
+    {
+      "type": "event_handler",
+      "output": {
+        "generic": [
+          {
+            "values": [
+              {
+                "text": "Няма проблем! Спираме до тук."
+              }
+            ],
+            "response_type": "text"
+          }
+        ]
+      },
+      "parent": "node_1_1639306709185",
+      "next_step": {
+        "behavior": "skip_all_slots"
+      },
+      "conditions": "#start_over",
+      "event_name": "generic",
+      "dialog_node": "handler_6_1639510957025",
+      "previous_sibling": "response_8_1639512862075"
     },
     {
       "type": "event_handler",
@@ -404,6 +1096,82 @@
       "dialog_node": "handler_9_1637523122850"
     },
     {
+      "type": "event_handler",
+      "output": {},
+      "parent": "slot_1_1639173173352",
+      "context": {
+        "appointmentType": "gynecology",
+        "appointmentTitle": "гинекологичен преглед"
+      },
+      "conditions": "@appointmentType:(гинекологичен преглед) || #gynecologyExam",
+      "event_name": "input",
+      "dialog_node": "handler_9_1639173173387"
+    },
+    {
+      "type": "event_handler",
+      "output": {},
+      "parent": "slot_8_1639511057023",
+      "context": {
+        "confirmation": "(#Yes || #No) && slot_in_focus"
+      },
+      "conditions": "(#Yes || #No) && slot_in_focus",
+      "event_name": "input",
+      "dialog_node": "handler_9_1639511057024"
+    },
+    {
+      "type": "event_handler",
+      "output": {
+        "generic": [
+          {
+            "values": [
+              {
+                "text": "Моля отговорете с Да или Не"
+              }
+            ],
+            "response_type": "text"
+          }
+        ]
+      },
+      "parent": "slot_8_1639511057023",
+      "conditions": "true",
+      "event_name": "nomatch",
+      "dialog_node": "handler_9_1639511570947",
+      "previous_sibling": "handler_5_1639511527989"
+    },
+    {
+      "type": "standard",
+      "title": "Обща консултация",
+      "output": {
+        "generic": [
+          {
+            "values": [
+              {
+                "text": "Разбирам. Запазете час като последвате този линк - http://calendly.com/arabadjikova/genericexam"
+              }
+            ],
+            "response_type": "text",
+            "selection_policy": "sequential"
+          }
+        ]
+      },
+      "conditions": "#genericConsultation",
+      "dialog_node": "node_1_1639233595655",
+      "previous_sibling": "node_7_1639227673610"
+    },
+    {
+      "type": "frame",
+      "title": "Бременна съм",
+      "metadata": {
+        "_customization": {
+          "mcr": true
+        }
+      },
+      "conditions": "#IamPregnant",
+      "digress_in": "does_not_return",
+      "dialog_node": "node_1_1639306709185",
+      "previous_sibling": "node_1_1639233595655"
+    },
+    {
       "type": "standard",
       "title": "Error fetching results",
       "output": {
@@ -420,10 +1188,33 @@
         ]
       },
       "parent": "node_6_1637495651119",
-      "conditions": "true",
+      "conditions": "false",
       "dialog_node": "node_5_1637791528322",
       "previous_sibling": "node_6_1637791254632",
       "disambiguation_opt_out": true
+    },
+    {
+      "type": "standard",
+      "title": "Час за морфологичен преглед",
+      "output": {
+        "generic": [
+          {
+            "values": [
+              {
+                "text": "ОК. Последвайте този линк за да запишите час за морфологичен преглед."
+              },
+              {
+                "text": "Цената на морфологичния преглед е XX лв"
+              }
+            ],
+            "response_type": "text",
+            "selection_policy": "multiline"
+          }
+        ]
+      },
+      "conditions": "#morfology",
+      "dialog_node": "node_5_1639513117814",
+      "previous_sibling": "node_1_1639306709185"
     },
     {
       "type": "frame",
@@ -461,6 +1252,26 @@
     },
     {
       "type": "standard",
+      "title": "Гинекологичен преглед",
+      "output": {
+        "generic": [
+          {
+            "values": [
+              {
+                "text": "Разбирам. Запазете час като последвате този линк - http://calendly.com/arabadjikova/gynecologyexam"
+              }
+            ],
+            "response_type": "text",
+            "selection_policy": "sequential"
+          }
+        ]
+      },
+      "conditions": "#gynecologyExam",
+      "dialog_node": "node_7_1639227673610",
+      "previous_sibling": "node_9_1638978557163"
+    },
+    {
+      "type": "standard",
       "title": "Помощ",
       "output": {
         "generic": [
@@ -489,6 +1300,235 @@
       "previous_sibling": "Welcome"
     },
     {
+      "type": "frame",
+      "title": "Резервация час за преглед",
+      "metadata": {
+        "_customization": {
+          "mcr": true
+        }
+      },
+      "conditions": "#newAppointment",
+      "dialog_node": "node_9_1638978557163",
+      "previous_sibling": "node_6_1637495651119"
+    },
+    {
+      "type": "response_condition",
+      "output": {
+        "generic": [
+          {
+            "values": [
+              {
+                "text": "Разбирам. Запазете час като последвате този линк - http://calendly.com/arabadjikova/genericexam"
+              }
+            ],
+            "response_type": "text",
+            "selection_policy": "sequential"
+          },
+          {
+            "user_defined": {
+              "type": "url",
+              "value": {
+                "url": "http://calendly.com/mbelianov"
+              }
+            },
+            "response_type": "user_defined"
+          }
+        ]
+      },
+      "parent": "node_9_1638978557163",
+      "conditions": "$appointmentType == \"generic\"",
+      "dialog_node": "response_10_1639174311906",
+      "previous_sibling": "response_4_1639174059759"
+    },
+    {
+      "type": "response_condition",
+      "output": {
+        "generic": [
+          {
+            "values": [
+              {
+                "text": "should not come here"
+              }
+            ],
+            "response_type": "text",
+            "selection_policy": "sequential"
+          }
+        ]
+      },
+      "parent": "node_9_1638978557163",
+      "conditions": "true",
+      "dialog_node": "response_1_1639228415629",
+      "previous_sibling": "response_4_1639241679564"
+    },
+    {
+      "type": "response_condition",
+      "output": {
+        "generic": [
+          {
+            "values": [
+              {
+                "text": "Разбирам. Запазете час като последвате този линк - http://calendly.com/arabadjikova/firsttrimester"
+              }
+            ],
+            "response_type": "text",
+            "selection_policy": "sequential"
+          }
+        ]
+      },
+      "parent": "node_1_1639306709185",
+      "conditions": "$pregnancyPeriod == \"трети\"",
+      "dialog_node": "response_2_1639511867596",
+      "previous_sibling": "response_5_1639511866228"
+    },
+    {
+      "type": "response_condition",
+      "output": {
+        "generic": [
+          {
+            "values": [
+              {
+                "text": "Заповадайте отново."
+              }
+            ],
+            "response_type": "text",
+            "selection_policy": "sequential"
+          }
+        ]
+      },
+      "parent": "node_1_1639306709185",
+      "conditions": "has_skipped_slots",
+      "dialog_node": "response_3_1639511912860"
+    },
+    {
+      "type": "response_condition",
+      "output": {
+        "generic": [
+          {
+            "values": [
+              {
+                "text": "Разбирам. Запазете час като последвате този линк - http://calendly.com/arabadjikova/morfology"
+              }
+            ],
+            "response_type": "text",
+            "selection_policy": "sequential"
+          },
+          {
+            "user_defined": {
+              "type": "url",
+              "value": {
+                "url": "http://calendly.com/mbelianov"
+              }
+            },
+            "response_type": "user_defined"
+          }
+        ]
+      },
+      "parent": "node_9_1638978557163",
+      "conditions": "$appointmentType == \"morfology\"",
+      "dialog_node": "response_4_1639174059759",
+      "previous_sibling": "response_5_1639231640043"
+    },
+    {
+      "type": "response_condition",
+      "output": {
+        "generic": [
+          {
+            "values": [
+              {
+                "text": "Разбирам. Запазете час като последвате този линк - http://calendly.com/arabadjikova/secondtrimester"
+              }
+            ],
+            "response_type": "text",
+            "selection_policy": "sequential"
+          }
+        ]
+      },
+      "parent": "node_9_1638978557163",
+      "conditions": "$appointmentType == \"pregnant\"",
+      "dialog_node": "response_4_1639241679564",
+      "previous_sibling": "response_8_1639241644543"
+    },
+    {
+      "type": "response_condition",
+      "output": {
+        "generic": [
+          {
+            "values": [
+              {
+                "text": "Заповядайте отново."
+              }
+            ],
+            "response_type": "text",
+            "selection_policy": "sequential"
+          }
+        ]
+      },
+      "parent": "node_9_1638978557163",
+      "conditions": "has_skipped_slots",
+      "dialog_node": "response_5_1639231640043",
+      "previous_sibling": "handler_5_1639231698023"
+    },
+    {
+      "type": "response_condition",
+      "output": {
+        "generic": [
+          {
+            "values": [
+              {
+                "text": "Разбирам. Запазете час като последвате този линк - http://calendly.com/arabadjikova/firsttrimester"
+              }
+            ],
+            "response_type": "text",
+            "selection_policy": "sequential"
+          }
+        ]
+      },
+      "parent": "node_1_1639306709185",
+      "conditions": "$pregnancyPeriod == \"втори\"",
+      "dialog_node": "response_5_1639511866228",
+      "previous_sibling": "response_8_1639511860065"
+    },
+    {
+      "type": "response_condition",
+      "output": {
+        "generic": [
+          {
+            "values": [
+              {
+                "text": "Разбирам. Запазете час като последвате този линк - http://calendly.com/arabadjikova/gynecologyexam"
+              }
+            ],
+            "response_type": "text",
+            "selection_policy": "sequential"
+          }
+        ]
+      },
+      "parent": "node_9_1638978557163",
+      "conditions": "$appointmentType == \"gynecology\"",
+      "dialog_node": "response_6_1639228188740",
+      "previous_sibling": "response_10_1639174311906"
+    },
+    {
+      "type": "response_condition",
+      "output": {
+        "generic": [
+          {
+            "values": [
+              {
+                "text": "Разбирам. Запазете час като последвате този линк - http://calendly.com/arabadjikova/firsttrimester"
+              }
+            ],
+            "response_type": "text",
+            "selection_policy": "sequential"
+          }
+        ]
+      },
+      "parent": "node_9_1638978557163",
+      "conditions": "$appointmentType == \"pregnant\" && $pregnancyPeriod == \"първи\"",
+      "dialog_node": "response_6_1639241392593",
+      "previous_sibling": "response_6_1639228188740"
+    },
+    {
       "type": "response_condition",
       "output": {
         "generic": [
@@ -507,6 +1547,66 @@
       "conditions": "has_skipped_slots",
       "dialog_node": "response_7_1637607742997",
       "previous_sibling": "handler_3_1637606896853"
+    },
+    {
+      "type": "response_condition",
+      "output": {
+        "generic": [
+          {
+            "values": [
+              {
+                "text": "Разбирам. Запазете час като последвате този линк - http://calendly.com/arabadjikova/firsttrimester"
+              }
+            ],
+            "response_type": "text",
+            "selection_policy": "sequential"
+          }
+        ]
+      },
+      "parent": "node_9_1638978557163",
+      "conditions": "$appointmentType == \"pregnant\" && $pregnancyPeriod == \"трети\"",
+      "dialog_node": "response_8_1639241644543",
+      "previous_sibling": "response_9_1639241553595"
+    },
+    {
+      "type": "response_condition",
+      "output": {
+        "generic": [
+          {
+            "values": [
+              {
+                "text": "Разбирам. Запазете час като последвате този линк - http://calendly.com/arabadjikova/firsttrimester"
+              }
+            ],
+            "response_type": "text",
+            "selection_policy": "sequential"
+          }
+        ]
+      },
+      "parent": "node_1_1639306709185",
+      "conditions": "$pregnancyPeriod == \"първи\"",
+      "dialog_node": "response_8_1639511860065",
+      "previous_sibling": "response_3_1639511912860"
+    },
+    {
+      "type": "response_condition",
+      "output": {
+        "generic": [
+          {
+            "values": [
+              {
+                "text": "Разбирам. Запазете час като последвате този линк - http://calendly.com/arabadjikova/secondtrimester"
+              }
+            ],
+            "response_type": "text",
+            "selection_policy": "sequential"
+          }
+        ]
+      },
+      "parent": "node_1_1639306709185",
+      "conditions": "true",
+      "dialog_node": "response_8_1639512862075",
+      "previous_sibling": "response_2_1639511867596"
     },
     {
       "type": "response_condition",
@@ -539,6 +1639,43 @@
       "previous_sibling": "response_7_1637607742997"
     },
     {
+      "type": "response_condition",
+      "output": {
+        "generic": [
+          {
+            "values": [
+              {
+                "text": "Разбирам. Запазете час като последвате този линк - http://calendly.com/arabadjikova/firsttrimester"
+              }
+            ],
+            "response_type": "text",
+            "selection_policy": "sequential"
+          }
+        ]
+      },
+      "parent": "node_9_1638978557163",
+      "conditions": "$appointmentType == \"pregnant\" && $pregnancyPeriod == \"втори\"",
+      "dialog_node": "response_9_1639241553595",
+      "previous_sibling": "response_6_1639241392593"
+    },
+    {
+      "type": "slot",
+      "output": {},
+      "parent": "node_9_1638978557163",
+      "variable": "$appointmentType",
+      "dialog_node": "slot_10_1639236247109",
+      "previous_sibling": "slot_2_1639232415480"
+    },
+    {
+      "type": "slot",
+      "output": {},
+      "parent": "node_9_1638978557163",
+      "variable": "$appointmentType",
+      "conditions": "",
+      "dialog_node": "slot_1_1639173173352",
+      "previous_sibling": "handler_1_1639173172886"
+    },
+    {
       "type": "slot",
       "output": {},
       "parent": "node_6_1637495651119",
@@ -549,10 +1686,59 @@
     {
       "type": "slot",
       "output": {},
+      "parent": "node_9_1638978557163",
+      "variable": "$appointmentType",
+      "dialog_node": "slot_2_1639232415480",
+      "previous_sibling": "slot_1_1639173173352"
+    },
+    {
+      "type": "slot",
+      "output": {},
+      "parent": "node_1_1639306709185",
+      "variable": "$pregnancyPeriod",
+      "dialog_node": "slot_2_1639510827928",
+      "previous_sibling": "handler_6_1639510957025"
+    },
+    {
+      "type": "slot",
+      "output": {},
       "parent": "node_6_1637495651119",
       "variable": "$confirmation",
       "dialog_node": "slot_6_1637523122849",
       "previous_sibling": "slot_2_1637521579136"
+    },
+    {
+      "type": "slot",
+      "output": {},
+      "parent": "node_9_1638978557163",
+      "variable": "$confirmation",
+      "dialog_node": "slot_6_1639229238259",
+      "previous_sibling": "slot_6_1639240735311"
+    },
+    {
+      "type": "slot",
+      "output": {},
+      "parent": "node_9_1638978557163",
+      "variable": "$appointmentType",
+      "dialog_node": "slot_6_1639240249732",
+      "previous_sibling": "slot_10_1639236247109"
+    },
+    {
+      "type": "slot",
+      "output": {},
+      "parent": "node_9_1638978557163",
+      "variable": "$pregnancyPeriod",
+      "conditions": "$appointmentType == \"pregnant\"",
+      "dialog_node": "slot_6_1639240735311",
+      "previous_sibling": "slot_6_1639240249732"
+    },
+    {
+      "type": "slot",
+      "output": {},
+      "parent": "node_1_1639306709185",
+      "variable": "$confirmation",
+      "dialog_node": "slot_8_1639511057023",
+      "previous_sibling": "slot_2_1639510827928"
     },
     {
       "type": "standard",
@@ -569,13 +1755,21 @@
             "selection_policy": "multiline"
           },
           {
-            "title": "Обучена съм да разговарям с Вас по следните теми:",
+            "title": "Обучен съм да разговарям с Вас по следните теми:",
             "options": [
               {
                 "label": "Проверка резултат от преглед",
                 "value": {
                   "input": {
                     "text": "Проверка резултат от преглед"
+                  }
+                }
+              },
+              {
+                "label": "Нов час за преглед",
+                "value": {
+                  "input": {
+                    "text": "Искам да запиша час за преглед"
                   }
                 }
               }
@@ -596,6 +1790,9 @@
       "context": {
         "patientEGN": null,
         "confirmation": null,
+        "appointmentType": null,
+        "pregnancyPeriod": null,
+        "appointmentTitle": null,
         "counter_wrong_egn": 0
       },
       "conditions": "welcome || #hello",

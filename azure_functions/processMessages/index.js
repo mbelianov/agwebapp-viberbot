@@ -307,6 +307,12 @@ async function processWatsonResponse(response, azf_context) {
     if (replies[i].response_type === "text") {
       await sendViberMessage(userId, replies[i].text, tracking_data)
     }
+
+    if (replies[i].response_type === "user_defined"){
+      if (replies[i].user_defined.type === "url"){
+        await sendViberUrlMessages(userId, [replies[i].user_defined.value.url], tracking_data)
+      }
+    }
   }
 
   if (response.output.actions)
