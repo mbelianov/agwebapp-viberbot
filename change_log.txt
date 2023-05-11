@@ -3,3 +3,6 @@ Only bot users that are doctors shall be allowed to query the Bodimed database.
 
 User story 002
 Integrate with IBM Watson for NLP
+
+User story 003
+Като пациент на д-р Арабаджикова, мога да използвам чатбот-а за проверка на резултати от изследвания

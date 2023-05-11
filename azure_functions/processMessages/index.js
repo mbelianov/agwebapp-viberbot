@@ -3,12 +3,15 @@ const Api2Pdf = require('api2pdf');
 const bodimed = require('./helpers/bodimed_connect');
 const AssistantV2 = require('ibm-watson/assistant/v2');
 const { IamAuthenticator } = require('ibm-watson/auth');
+const { TableClient } = require("@azure/data-tables");
 
+const connectionString = process.env.AzureWebJobsStorage;
+const client = TableClient.fromConnectionString(connectionString, "resultrequests");
 
 const myAxios = axios.create({
   baseURL: 'https://chatapi.viber.com',
   headers: {
-    "X-Viber-Auth-Token": process.env.VIBER_AUTH_TOKEN,
+    "X-Viber-Auth-Token": process.env.VIBER_AUTH_TOKEN_DEV,
     "Content-Type": "application/json"
   }
 });
@@ -27,15 +30,13 @@ const assistant = new AssistantV2({
 
 module.exports = async function (context, myQueueItem) {
   let doctors = context.bindings.rDoctors;
+  let registeredRequests = context.bindings.rResultRequests;
+  //let resutRequests = context.bindings.rResultRequests;
+  let rp = "";
 
   if (myQueueItem.event === "message") {
     context.log('Processing new mesasage from the queue');
-    context.log(myQueueItem);
-
-    let tracking_data = myQueueItem.message.tracking_data ? JSON.parse(myQueueItem.message.tracking_data) : { timestamp: 0, data: {} };
-
-    if (tracking_data.timestamp < (Date.now() - 270 * 1000)) // 3 min timeout
-      tracking_data.data = {};
+    //context.log(myQueueItem);
 
     let i = doctors.findIndex(doctor => doctor.viber_id == myQueueItem.sender.id);
 
@@ -59,10 +60,17 @@ module.exports = async function (context, myQueueItem) {
 
         await myAxios.post('/pa/send_message', {
           "receiver": myQueueItem.sender.id,
-          "min.api.version": 1,
+          "min_api_version": 1,
           "type": "text",
           "sender": { "name": "Асистент" },
-          "text": `${count} от ${patients.patientsList.length}`
+          "text": `${count} от ${patients.patientsList.length}`,
+          "keyboard": {
+            "Type": "keyboard",
+            "Buttons": [{
+              "Columns": 6, "Rows": 1, "ActionType": "reply", "TextSize": "regular",
+              "ActionBody": "---resultrequests", "Text": "Резултати"
+            }]
+          }
         })
           .then(res => { context.log.verbose(res) })
           .catch(error => { context.log.error(error) })
@@ -72,7 +80,14 @@ module.exports = async function (context, myQueueItem) {
           "min_api_version": 7,
           "type": "rich_media",
           "sender": { "name": "Асистент" },
-          "rich_media": richMediaContent
+          "rich_media": richMediaContent,
+          "keyboard": {
+            "Type": "keyboard",
+            "Buttons": [{
+              "Columns": 6, "Rows": 1, "ActionType": "reply", "TextSize": "regular",
+              "ActionBody": "---resultrequests", "Text": "Резултати"
+            }]
+          }
         })
           .then(res => { context.log.verbose(res) })
           .catch(error => { context.log.error(error) })
@@ -98,9 +113,73 @@ module.exports = async function (context, myQueueItem) {
           })
           .catch(error => { context.log.error("api2pdf error: ", error) });
       }
+
+      rp = /^---resultrequests$/gi
+      if (rp.test(myQueueItem.message.text)) {
+        if (registeredRequests.length > 0) {
+          let request = registeredRequests[0];
+          let reply = {
+            "ButtonsGroupColumns": 6,
+            "ButtonsGroupRows": 2,
+            "Buttons": [{
+              "Columns": 6, "Rows": 2, "ActionType": "reply", "TextHAlign": "left",
+              "Text": `<font color=#323232><b>${request.patientName}</b></font><font color=#777777><br>ЕГН: ${request.patientEGN}<br>ViberName: ${request.patientViberName}</font>`,
+              "ActionBody": `${request.patientName.split(" ")[0]}`,
+            }]
+          }
+
+          await myAxios.post('/pa/send_message', {
+            "receiver": myQueueItem.sender.id,
+            "min_api_version": 7,
+            "type": "rich_media",
+            "sender": { "name": "Асистент" },
+            "rich_media": reply
+          })
+            .then(res => { context.log.verbose(res) })
+            .catch(error => { context.log.error(error) })
+
+          await client.deleteEntity(request.PartitionKey, request.RowKey);
+
+          return await myAxios.post('/pa/send_message', {
+            "receiver": myQueueItem.sender.id,
+            "min_api_version": 1,
+            "type": "text",
+            "sender": { "name": "Асистент" },
+            "text": `Чакат още: ${registeredRequests.length - 1}`,
+            "keyboard": {
+              "Type": "keyboard",
+              "Buttons": [{
+                "Columns": 6, "Rows": 1, "ActionType": "reply", "TextSize": "regular",
+                "ActionBody": "---resultrequests", "Text": "Резултати"
+              }]
+            }
+          })
+            .then(res => { context.log.verbose(res) })
+            .catch(error => { context.log.error(error) })
+        }
+        else {
+          return await myAxios.post('/pa/send_message', {
+            "receiver": myQueueItem.sender.id,
+            "min_api_version": 1,
+            "type": "text",
+            "sender": { "name": "Асистент" },
+            "text": `Няма чакащи заявки.`,
+            "keyboard": {
+              "Type": "keyboard",
+              "Buttons": [{
+                "Columns": 6, "Rows": 1, "ActionType": "reply", "TextSize": "regular",
+                "ActionBody": "---resultrequests", "Text": "Резултати"
+              }]
+            }
+          })
+            .then(res => { context.log.verbose(res) })
+            .catch(error => { context.log.error(error) })
+        }
+      }
+
     }
 
-    let re_000 = /^add uin:[0-9]{10}pass:[a-zа-я0-9]{1,}$/gi //new user in Doctor role
+    let re_000 = /^---add uin:[0-9]{10}pass:[a-zа-я0-9]{1,}$/gi //new user in Doctor role
     let re_000_uin = /uin:[0-9]{10}/gi
     let re_000_pass = /pass:[a-zа-я0-9]{1,}/gi
     if (re_000.test(myQueueItem.message.text)) {
@@ -137,13 +216,13 @@ module.exports = async function (context, myQueueItem) {
         .catch(error => { context.log.error(error) })
     }
 
-    let re_003 = /^delete uin:[0-9]{10}$/gi //delete this profile from doctors table
+    let re_003 = /^---delete uin:[0-9]{10}$/gi //delete this profile from doctors table
     if (re_003.test(myQueueItem.message.text)) {
       let reply = "Тази операция още не се поддържа.";
 
       return await myAxios.post('/pa/send_message', {
         "receiver": myQueueItem.sender.id,
-        "min.api.version": 1,
+        "min_api_version": 1,
         "type": "text",
         "sender": { "name": "Асистент" },
         "text": reply
@@ -151,6 +230,128 @@ module.exports = async function (context, myQueueItem) {
         .then(res => { context.log.verbose(res) })
         .catch(error => { context.log.error(error) })
     }
+
+    let tracking_data = myQueueItem.message.tracking_data ? JSON.parse(myQueueItem.message.tracking_data) : { timestamp: 0, data: {} };
+
+    rp = /^---start/gi
+    if (rp.test(myQueueItem.message.text) || (tracking_data.data.current_task != "" && tracking_data.timestamp < (Date.now() - 600 * 1000) /*timeout*/)) {
+      return await sendViberMessage(myQueueItem.sender.id,
+        "Изберете как да Ви помогна.",
+        JSON.stringify({
+          timestamp: 0,
+          data: { current_task: "", current_subtask: "" }
+        }),
+        {
+          "Type": "keyboard",
+          "Buttons": [{
+            "Columns": 3, "Rows": 2, "ActionType": "reply", "TextSize": "regular",
+            "ActionBody": "---results", "Text": "Резултати"
+          }, {
+            "Columns": 3, "Rows": 2, "ActionType": "reply", "TextSize": "regular",
+            "ActionBody": "---help", "Text": "Друго/Помощ",
+          }]
+        })
+    }
+
+    rp = /^---results/gi
+    if (rp.test(myQueueItem.message.text)) {
+      if (registeredRequests.length > 99)
+        return await sendViberMessage(myQueueItem.sender.id,
+          "Съжалявам, в момента имаме твърде много чакащи пациенти. Моля опитайте пак след няколко часа.",
+          JSON.stringify({
+            timestamp: 0,
+            data: { current_task: "", current_subtask: "" }
+          }),
+          {
+            "Type": "keyboard",
+            "Buttons": [{
+              "Columns": 3, "Rows": 2, "ActionType": "reply", "TextSize": "regular",
+              "ActionBody": "---results", "Text": "Резултати"
+            }, {
+              "Columns": 3, "Rows": 2, "ActionType": "reply", "TextSize": "regular",
+              "ActionBody": "---help", "Text": "Друго/Помощ",
+            }]
+          })
+
+      return await sendViberMessage(myQueueItem.sender.id,
+        "Въведете Вашето първо име и ЕГН разделени с интервал.",
+        JSON.stringify({
+          timestamp: Date.now(),
+          data: { current_task: "results", current_subtask: "collect_name" }
+        }),
+        {
+          "Type": "keyboard",
+          "Buttons": [{
+            "Columns": 4, "Rows": 1, "ActionType": "reply", "TextSize": "regular",
+            "ActionBody": "---start", "Text": "Отказ"
+          }, {
+            "Columns": 2, "Rows": 1, "ActionType": "reply", "TextSize": "regular",
+            "ActionBody": "---help", "Text": "Друго/Помощ",
+          }]
+        })
+    }
+
+    rp = /^[a-zа-я]{1,} [0-9]{10}$/gi
+    if (rp.test(myQueueItem.message.text) && tracking_data.data.current_task == "results" && tracking_data.data.current_subtask == "collect_name") {
+      if (registeredRequests.findIndex(req => req.patientViberId == myQueueItem.sender.id) == -1) { // new request
+        context.bindings.wResultRequests = [];
+        context.bindings.wResultRequests.push({
+          PartitionKey: "Partition",
+          RowKey: myQueueItem.sender.id,
+          patientName: myQueueItem.message.text.split(" ")[0],
+          patientEGN: myQueueItem.message.text.split(" ")[1],
+          patientViberName: myQueueItem.sender.name,
+          patientViberId: myQueueItem.sender.id
+        })
+      }
+      else { //double request
+      }
+
+      return await sendViberMessage(myQueueItem.sender.id,
+        "Вашата заявка е приета. Д-р Арабаджикова ще Ви информира за Вашите резултати в срок от един работен ден..",
+        JSON.stringify({
+          timestamp: 0,
+          data: { current_task: "", current_subtask: "" }
+        }),
+        {
+          "Type": "keyboard",
+          "Buttons": [{
+            "Columns": 6, "Rows": 1, "ActionType": "reply", "TextSize": "regular", "BgColor": "#2db9b9",
+            "ActionBody": "---start", "Text": "Начало"
+          }]
+        })
+    }
+
+    rp = /^---help/gi
+    if (rp.test(myQueueItem.message.text)) {
+      return await sendViberMessage(myQueueItem.sender.id,
+        "За да заявите проверка на резултати от изследвания, изберете 'Резултати' от началното меню и следвайте точно инструкциите на асистента.",
+        JSON.stringify({
+          timestamp: 0,
+          data: { current_task: "", current_subtask: "" }
+        }),
+        {
+          "Type": "keyboard",
+          "Buttons": [{
+            "Columns": 6, "Rows": 1, "ActionType": "reply", "TextSize": "regular",
+            "ActionBody": "---start", "Text": "Към началното меню"
+          }]
+        })
+    }
+
+    return await sendViberMessage(myQueueItem.sender.id,
+      "Не ви разбрах. Моля започнете от начало.",
+      JSON.stringify({
+        timestamp: 0,
+        data: { current_task: "", current_subtask: "" }
+      }),
+      {
+        "Type": "keyboard",
+        "Buttons": [{
+          "Columns": 6, "Rows": 1, "ActionType": "reply", "TextSize": "regular",
+          "ActionBody": "---start", "Text": "Към началното меню"
+        }]
+      })
 
     let watson = tracking_data.data.watson ? tracking_data.data.watson : {}
     //let responses
@@ -166,90 +367,6 @@ module.exports = async function (context, myQueueItem) {
     }
 
     await sendMessageToWatson(myQueueItem.sender.id, watson.session_id, myQueueItem.message.text, null, context);
-    /*
-    await assistant.message({
-      input: {
-        text: myQueueItem.message.text,
-        //intents: tracking_data.data.watson_intents,
-        options: { return_context: true },
-      },
-      userId: myQueueItem.sender.id,
-      assistantId: process.env.IBM_WATSON_ASSISTANT_ID,
-      sessionId: watson.session_id
-    })
-      .then(async (resp) => {
-        context.log("response from watson:", JSON.stringify(resp.result, null, 2));
-        watson.intents = resp.result.output.intents;
-        let responses = resp.result.output.generic
-        tracking_data.data.watson = watson;
-        tracking_data.timestamp = Date.now();
-        for (i = 0; Array.isArray(responses) && i < responses.length; i++) {//context.log(responses[i].text)
-          if (responses[i].response_type === "option") {
-            let richMediaContent = { "ButtonsGroupRows": 2, "ButtonsGroupColumns": 4, "Buttons": [] }
-            responses[i].options.forEach((option, index) => {
-              richMediaContent.Buttons.push({
-                "ActionType": "reply",
-                "ActionBody": option.value.input.text,
-                "Text": option.label
-              })
-            })
-            await myAxios.post('/pa/send_message', {
-              "receiver": myQueueItem.sender.id,
-              "min.api.version": 1,
-              "type": "text",
-              "sender": { "name": "Асистент" },
-              "text": `${responses[i].title}`
-            })
-              .then(res => { context.log.verbose(res) })
-              .catch(error => { context.log.error(error) })
-
-            await myAxios.post('/pa/send_message', {
-              "receiver": myQueueItem.sender.id,
-              "min_api_version": 7,
-              "type": "rich_media",
-              "sender": { "name": "Асистент" },
-              "rich_media": richMediaContent
-            })
-              .then(res => { context.log.verbose(res) })
-              .catch(error => { context.log.error(error) })
-          }
-
-          if (responses[i].response_type === "text") {
-            await myAxios.post('/pa/send_message', {
-              "receiver": myQueueItem.sender.id,
-              "min.api.version": 1,
-              "type": "text",
-              "sender": { "name": "Асистент" },
-              "text": responses[i].text,
-              "tracking_data": JSON.stringify(tracking_data)
-            })
-              .then(res => { context.log.verbose(res) })
-              .catch(error => { context.log.error(error) })
-          }
-        }
-        if (resp.result.output.actions)
-          if (resp.result.output.actions[0].type === "client")
-            if (resp.result.output.actions[0].name === "getExamResultReport") {
-              let patientId = resp.result.output.actions[0].parameters.patient_id
-              let resultVar = resp.result.output.actions[0].result_variable
-              let cont = { 'skills': { 'main skill': { 'user_defined': {} } } }
-              cont['skills']['main skill']['user_defined'][resultVar] = `this should be the result for ${patientId}!`
-              await assistant.message({
-                input: {
-                  text: "",
-                  options: { return_context: true },
-                },
-                userId: myQueueItem.sender.id,
-                assistantId: process.env.IBM_WATSON_ASSISTANT_ID,
-                sessionId: watson.session_id,
-                context: cont
-              })
-                .then((resp) => { context.log("response from watson:", JSON.stringify(resp.result, null, 2)) })
-                .catch(err => { context.log.error("error occured while talking to watson:", err) });
-            }
-      })
-      .catch(err => { context.log.error("error occured while talking to watson:", err) });
-      */
   }
   else
     context.log("no new message")
@@ -308,8 +425,8 @@ async function processWatsonResponse(response, azf_context) {
       await sendViberMessage(userId, replies[i].text, tracking_data)
     }
 
-    if (replies[i].response_type === "user_defined"){
-      if (replies[i].user_defined.type === "url"){
+    if (replies[i].response_type === "user_defined") {
+      if (replies[i].user_defined.type === "url") {
         await sendViberUrlMessages(userId, [replies[i].user_defined.value.url], tracking_data)
       }
     }
@@ -340,7 +457,7 @@ async function getExamResultReports(azf_context, patientId, patientId_type) {
   return await Promise.all(patients.patientsList.map(async (patient) => {
     const result = await bodimed.getResults(azf_context, `?idnap=${patient.bodimed_patient_id}&pass=${patient.bodimed_patient_password}`)
     const reportUlr = await a2pClient.chromeHtmlToImage(result.result)
-      .then(async (response) => { 
+      .then(async (response) => {
         return response.FileUrl;
       })
       .catch(error => {
@@ -348,13 +465,13 @@ async function getExamResultReports(azf_context, patientId, patientId_type) {
         return null
       })
 
-      return reportUlr
+    return reportUlr
   }))
 }
 
-async function sendViberUrlMessages(userId, urlList, tracking_data = ""){
-  await Promise.all(urlList.map(async (url) =>{
-    await myAxios.post( '/pa/send_message', {
+async function sendViberUrlMessages(userId, urlList, tracking_data = "") {
+  await Promise.all(urlList.map(async (url) => {
+    await myAxios.post('/pa/send_message', {
       "receiver": userId,
       "min_api_version": 1,
       "type": "url",
@@ -362,19 +479,20 @@ async function sendViberUrlMessages(userId, urlList, tracking_data = ""){
       "media": url,
       "tracking_data": JSON.stringify(tracking_data)
     })
-      .then(res => { console.debug("sendViberUrlMessage POST error ", res) })
+      .then(res => { console.debug("sendViberUrlMessage POST response ", res) })
       .catch(error => { console.error("sendViberUrlMessage POST error ", error) })
   }))
 }
 
-async function sendViberMessage(userId, messageInput, tracking_data = "") {
+async function sendViberMessage(userId, messageInput, tracking_data = "", keyboard = {}) {
   await myAxios.post('/pa/send_message', {
     "receiver": userId,
     "min.api.version": 1,
     "type": "text",
     "sender": { "name": "Асистент" },
     "text": messageInput,
-    "tracking_data": JSON.stringify(tracking_data)
+    "tracking_data": tracking_data,
+    "keyboard": keyboard
   })
     .then(res => { console.debug("sendViberMessage POST response", res) })
     .catch(error => { console.error("sendViberMessage POST error", error) })

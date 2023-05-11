@@ -1,0 +1,26 @@
+{
+  "bindings": [
+    {
+      "name": "myTimer",
+      "type": "timerTrigger",
+      "direction": "in",
+      "schedule": "0 0 12,18 * * *"
+    },    
+    {
+      "type": "table",
+      "direction": "in",
+      "name": "rDoctors",
+      "tableName": "doctors",
+      "take": "50",
+      "connection": "AzureWebJobsStorage"
+    },
+    {
+      "type": "table",
+      "direction": "in",
+      "name": "rResultRequests",
+      "tableName": "resultrequests",
+      "take": "100",
+      "connection": "AzureWebJobsStorage"
+    }
+  ]
+}

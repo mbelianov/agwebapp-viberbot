@@ -21,6 +21,21 @@
       "name": "wDoctors",
       "tableName": "doctors",
       "connection": "AzureWebJobsStorage"
+    },
+    {
+      "type": "table",
+      "direction": "in",
+      "name": "rResultRequests",
+      "tableName": "resultrequests",
+      "take": "100",
+      "connection": "AzureWebJobsStorage"
+    },
+    {
+      "type": "table",
+      "direction": "out",
+      "name": "wResultRequests",
+      "tableName": "resultrequests",
+      "connection": "AzureWebJobsStorage"
     }
   ]
 }
