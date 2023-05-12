@@ -4,6 +4,8 @@ const bodimed = require('./helpers/bodimed_connect');
 const AssistantV2 = require('ibm-watson/assistant/v2');
 const { IamAuthenticator } = require('ibm-watson/auth');
 const { TableClient } = require("@azure/data-tables");
+const { button } = require("../common/keyboard_buttons");
+const { concatHexCharCode, removeNullParams } = require("../common/support_functions");
 
 const connectionString = process.env.AzureWebJobsStorage;
 const client = TableClient.fromConnectionString(connectionString, "resultrequests");
@@ -31,7 +33,7 @@ const assistant = new AssistantV2({
 module.exports = async function (context, myQueueItem) {
   let doctors = context.bindings.rDoctors;
   let registeredRequests = context.bindings.rResultRequests;
-  //let resutRequests = context.bindings.rResultRequests;
+  let stdReplies = context.bindings.standardReplies;
   let rp = "";
 
   if (myQueueItem.event === "message") {
@@ -40,14 +42,14 @@ module.exports = async function (context, myQueueItem) {
 
     let i = doctors.findIndex(doctor => doctor.viber_id == myQueueItem.sender.id);
 
-    if (i >= 0) {
+    if (i != -1) { // doctor section
 
-      let re_001 = /^[a-zа-я]{1,}$/gi
-      if (re_001.test(myQueueItem.message.text)) {
+      rp = /^[a-zа-я]{1,}$/gi  //doctor searching for a patient in bodimed DB
+      if (rp.test(myQueueItem.message.text)) {
         const patients = await bodimed.getPatients(context, myQueueItem.message.text);
         let count = 0;
         richMediaContent["Buttons"].length = 0;
-        patients.patientsList.forEach(patient => {
+        patients.patientsList.forEach(patient => { // prepare reply with first 9 patients from Bodimed DB
           if (count < 9) { // we show only first 9 patients
             count++
             richMediaContent["Buttons"].push({
@@ -58,43 +60,28 @@ module.exports = async function (context, myQueueItem) {
           }
         })
 
-        await myAxios.post('/pa/send_message', {
-          "receiver": myQueueItem.sender.id,
-          "min_api_version": 1,
-          "type": "text",
-          "sender": { "name": "Асистент" },
-          "text": `${count} от ${patients.patientsList.length}`,
-          "keyboard": {
+        await sendViberMessage(myQueueItem.sender.id,
+          `${count} от ${patients.patientsList.length}`,
+          "",
+          {
             "Type": "keyboard",
-            "Buttons": [{
-              "Columns": 6, "Rows": 1, "ActionType": "reply", "TextSize": "regular",
-              "ActionBody": "---resultrequests", "Text": "Резултати"
-            }]
+            "Buttons": [button(`Следващ (${registeredRequests.length})`, "---resultrequests")]
           }
-        })
-          .then(res => { context.log.verbose(res) })
-          .catch(error => { context.log.error(error) })
+        )
 
-        return await myAxios.post('/pa/send_message', {
-          "receiver": myQueueItem.sender.id,
-          "min_api_version": 7,
-          "type": "rich_media",
-          "sender": { "name": "Асистент" },
-          "rich_media": richMediaContent,
-          "keyboard": {
+        return await sendViberRichMedia(myQueueItem.sender.id,
+          richMediaContent,
+          myQueueItem.message.tracking_data || "",
+          {
             "Type": "keyboard",
-            "Buttons": [{
-              "Columns": 6, "Rows": 1, "ActionType": "reply", "TextSize": "regular",
-              "ActionBody": "---resultrequests", "Text": "Резултати"
-            }]
+            "Buttons": [button(`Следващ (${registeredRequests.length})`, "---resultrequests")]
           }
-        })
-          .then(res => { context.log.verbose(res) })
-          .catch(error => { context.log.error(error) })
+        )
       }
 
-      let re_002 = /^\?idnap=[0-9]+&pass=[0-9]+$/gi
-      if (re_002.test(myQueueItem.message.text)) {
+      rp = /^\?idnap=[0-9]+&pass=[0-9]+$/gi  //doctor fetching exam results of specific patient from bodibmed DB
+      if (rp.test(myQueueItem.message.text)) {
+        let tracking_data = JSON.parse(myQueueItem.message.tracking_data)
         var a2pClient = new Api2Pdf(process.env.API2PDF_KEY);
         const result = await bodimed.getResults(context, myQueueItem.message.text);
         return await a2pClient.chromeHtmlToImage(result.result)
@@ -104,80 +91,100 @@ module.exports = async function (context, myQueueItem) {
               "min_api_version": 1,
               "type": "url",
               "sender": { "name": "Асистент" },
-              "media": result.FileUrl
+              "media": result.FileUrl,
+              "tracking_data": JSON.stringify({
+                timestamp: 0,
+                data: {
+                  current_task: "result_interpretation",
+                  parameters: {
+                    resultUrl: result.FileUrl,
+                    patientViberId: tracking_data.data.parameters.patientViberId || "",
+                  }
+                }
+              }),
+              "keyboard": {
+                "Type": "keyboard",
+                "Buttons": [
+                  button(`${stdReplies[0].text}`, `---interpretation|${stdReplies[0].reply}`, 2, 1),
+                  button(`${stdReplies[1].text}`, `---interpretation|${stdReplies[1].reply}`, 2, 1),
+                  button(`${stdReplies[2].text}`, `---interpretation|${stdReplies[2].reply}`, 2, 1),
+                  button(`Следващ (${registeredRequests.length})`, "---resultrequests")
+                ]
+              }
             };
+
             return await myAxios.post('/pa/send_message', msgData)
-              .then(res => { context.log.verbose(res) })
+              .then(res => { context.log.verbose("send_message POST result: ", res) })
               .catch(error => { context.log.error("send_message POST error: ", error) })
 
           })
           .catch(error => { context.log.error("api2pdf error: ", error) });
       }
 
-      rp = /^---resultrequests$/gi
+      rp = /^---resultrequests$/gi //doctor asking for first patient in the queue
       if (rp.test(myQueueItem.message.text)) {
         if (registeredRequests.length > 0) {
           let request = registeredRequests[0];
-          let reply = {
+          let reply = { // prepare reply
             "ButtonsGroupColumns": 6,
             "ButtonsGroupRows": 2,
             "Buttons": [{
               "Columns": 6, "Rows": 2, "ActionType": "reply", "TextHAlign": "left",
-              "Text": `<font color=#323232><b>${request.patientName}</b></font><font color=#777777><br>ЕГН: ${request.patientEGN}<br>ViberName: ${request.patientViberName}</font>`,
+              "Text": `<font color=#323232><b>${request.patientName}</b></font><font color=#777777><br>ЕГН: ${request.patientEGN}<br>Viber name: ${request.patientViberName}</font>`,
               "ActionBody": `${request.patientName.split(" ")[0]}`,
             }]
           }
 
-          await myAxios.post('/pa/send_message', {
-            "receiver": myQueueItem.sender.id,
-            "min_api_version": 7,
-            "type": "rich_media",
-            "sender": { "name": "Асистент" },
-            "rich_media": reply
-          })
-            .then(res => { context.log.verbose(res) })
-            .catch(error => { context.log.error(error) })
-
-          await client.deleteEntity(request.PartitionKey, request.RowKey);
-
-          return await myAxios.post('/pa/send_message', {
-            "receiver": myQueueItem.sender.id,
-            "min_api_version": 1,
-            "type": "text",
-            "sender": { "name": "Асистент" },
-            "text": `Чакат още: ${registeredRequests.length - 1}`,
-            "keyboard": {
+          await sendViberRichMedia(myQueueItem.sender.id,
+            reply,
+            JSON.stringify({
+              timestamp: 0,
+              data: {
+                current_task: "results", current_subtask: "fetch_results",
+                parameters: {
+                  patientViberId: request.patientViberId
+                }
+              }
+            }),
+            {
               "Type": "keyboard",
-              "Buttons": [{
-                "Columns": 6, "Rows": 1, "ActionType": "reply", "TextSize": "regular",
-                "ActionBody": "---resultrequests", "Text": "Резултати"
-              }]
+              "Buttons": [button(`Следващ (${registeredRequests.length - 1})`, "---resultrequests")]
             }
-          })
-            .then(res => { context.log.verbose(res) })
-            .catch(error => { context.log.error(error) })
+          )
+
+          return await client.deleteEntity(request.PartitionKey, request.RowKey)
+            .catch(error => context.log.error("error delete entity from resultrequests table. ", error));;
         }
         else {
-          return await myAxios.post('/pa/send_message', {
-            "receiver": myQueueItem.sender.id,
-            "min_api_version": 1,
-            "type": "text",
-            "sender": { "name": "Асистент" },
-            "text": `Няма чакащи заявки.`,
-            "keyboard": {
+          return await sendViberMessage(myQueueItem.sender.id,
+            "Няма чакаши заявки", "",
+            {
               "Type": "keyboard",
-              "Buttons": [{
-                "Columns": 6, "Rows": 1, "ActionType": "reply", "TextSize": "regular",
-                "ActionBody": "---resultrequests", "Text": "Резултати"
-              }]
-            }
-          })
-            .then(res => { context.log.verbose(res) })
-            .catch(error => { context.log.error(error) })
+              "Buttons": [button("Нова проверка", "---resultrequests")]
+            })
         }
       }
 
-    }
+      rp = /^---interpretation\|.{1,}$/gi //doctor provides instructions to the bot what to reply to the patient
+      if (rp.test(myQueueItem.message.text)) {
+        let reply = myQueueItem.message.text.split("|")[1];
+        let tracking_data = JSON.parse(myQueueItem.message.tracking_data)
+        let patientViberId = tracking_data.data.parameters.patientViberId;
+        let resultUrl = tracking_data.data.parameters.resultUrl;
+
+        await sendViberUrlMessages(patientViberId, [resultUrl]);
+        await sendViberMessage(patientViberId, reply);
+
+        return await sendViberMessage(myQueueItem.sender.id,
+          "Готово.",
+          "",
+          {
+            "Type": "keyboard",
+            "Buttons": [button(`Следващ (${registeredRequests.length - 1})`, "---resultrequests")]
+          })
+      }
+
+    } // end of doctor section
 
     let re_000 = /^---add uin:[0-9]{10}pass:[a-zа-я0-9]{1,}$/gi //new user in Doctor role
     let re_000_uin = /uin:[0-9]{10}/gi
@@ -193,7 +200,7 @@ module.exports = async function (context, myQueueItem) {
           context.bindings.wDoctors = [];
           context.bindings.wDoctors.push({
             PartitionKey: "Partition",
-            RowKey: myQueueItem.sender.id,
+            RowKey: concatHexCharCode(myQueueItem.sender.id),
             uin: myQueueItem.message.text.match(re_000_uin)[0].substr(-10),
             pass: myQueueItem.message.text.match(re_000_pass)[0].substr(5),
             name: myQueueItem.sender.name,
@@ -243,13 +250,7 @@ module.exports = async function (context, myQueueItem) {
         }),
         {
           "Type": "keyboard",
-          "Buttons": [{
-            "Columns": 3, "Rows": 2, "ActionType": "reply", "TextSize": "regular",
-            "ActionBody": "---results", "Text": "Резултати"
-          }, {
-            "Columns": 3, "Rows": 2, "ActionType": "reply", "TextSize": "regular",
-            "ActionBody": "---help", "Text": "Друго/Помощ",
-          }]
+          "Buttons": [button("Резултати", "---results", 3, 2), button("Друго/Помощ", "---help", 3, 2)]
         })
     }
 
@@ -264,30 +265,18 @@ module.exports = async function (context, myQueueItem) {
           }),
           {
             "Type": "keyboard",
-            "Buttons": [{
-              "Columns": 3, "Rows": 2, "ActionType": "reply", "TextSize": "regular",
-              "ActionBody": "---results", "Text": "Резултати"
-            }, {
-              "Columns": 3, "Rows": 2, "ActionType": "reply", "TextSize": "regular",
-              "ActionBody": "---help", "Text": "Друго/Помощ",
-            }]
+            "Buttons": [button("Резултати", "---results", 3, 2), button("Друго/Помощ", "---help", 3, 2)]
           })
 
       return await sendViberMessage(myQueueItem.sender.id,
-        "Въведете Вашето първо име и ЕГН разделени с интервал.",
+        "Въведете на кирилица Вашето първо име и ЕГН разделени с интервал.",
         JSON.stringify({
           timestamp: Date.now(),
           data: { current_task: "results", current_subtask: "collect_name" }
         }),
         {
           "Type": "keyboard",
-          "Buttons": [{
-            "Columns": 4, "Rows": 1, "ActionType": "reply", "TextSize": "regular",
-            "ActionBody": "---start", "Text": "Отказ"
-          }, {
-            "Columns": 2, "Rows": 1, "ActionType": "reply", "TextSize": "regular",
-            "ActionBody": "---help", "Text": "Друго/Помощ",
-          }]
+          "Buttons": [button("Отказ", "---start", 4, 1), button("Друго/Помощ", "---help", 2, 1)]
         })
     }
 
@@ -297,7 +286,7 @@ module.exports = async function (context, myQueueItem) {
         context.bindings.wResultRequests = [];
         context.bindings.wResultRequests.push({
           PartitionKey: "Partition",
-          RowKey: myQueueItem.sender.id,
+          RowKey: concatHexCharCode(myQueueItem.sender.id),
           patientName: myQueueItem.message.text.split(" ")[0],
           patientEGN: myQueueItem.message.text.split(" ")[1],
           patientViberName: myQueueItem.sender.name,
@@ -316,7 +305,7 @@ module.exports = async function (context, myQueueItem) {
         {
           "Type": "keyboard",
           "Buttons": [{
-            "Columns": 6, "Rows": 1, "ActionType": "reply", "TextSize": "regular", "BgColor": "#2db9b9",
+            "Columns": 6, "Rows": 1, "ActionType": "reply", "TextSize": "regular", "BgColor": "#ff0000",
             "ActionBody": "---start", "Text": "Начало"
           }]
         })
@@ -332,10 +321,7 @@ module.exports = async function (context, myQueueItem) {
         }),
         {
           "Type": "keyboard",
-          "Buttons": [{
-            "Columns": 6, "Rows": 1, "ActionType": "reply", "TextSize": "regular",
-            "ActionBody": "---start", "Text": "Към началното меню"
-          }]
+          "Buttons": [button("Към началното меню", "---start")]
         })
     }
 
@@ -347,10 +333,7 @@ module.exports = async function (context, myQueueItem) {
       }),
       {
         "Type": "keyboard",
-        "Buttons": [{
-          "Columns": 6, "Rows": 1, "ActionType": "reply", "TextSize": "regular",
-          "ActionBody": "---start", "Text": "Към началното меню"
-        }]
+        "Buttons": [button("Към началното меню", "---start")]
       })
 
     let watson = tracking_data.data.watson ? tracking_data.data.watson : {}
@@ -484,29 +467,30 @@ async function sendViberUrlMessages(userId, urlList, tracking_data = "") {
   }))
 }
 
-async function sendViberMessage(userId, messageInput, tracking_data = "", keyboard = {}) {
-  await myAxios.post('/pa/send_message', {
+async function sendViberMessage(userId, messageInput, tracking_data = "", keyboard = null) {
+  await myAxios.post('/pa/send_message', removeNullParams({
     "receiver": userId,
-    "min.api.version": 1,
+    "min_api_version": 1,
     "type": "text",
     "sender": { "name": "Асистент" },
     "text": messageInput,
     "tracking_data": tracking_data,
     "keyboard": keyboard
-  })
+  }))
     .then(res => { console.debug("sendViberMessage POST response", res) })
     .catch(error => { console.error("sendViberMessage POST error", error) })
 }
 
-async function sendViberRichMedia(userId, richmedia, tracking_data = "") {
-  await myAxios.post('/pa/send_message', {
+async function sendViberRichMedia(userId, richmedia, tracking_data = "", keyboard = null) {
+  await myAxios.post('/pa/send_message', removeNullParams({
     "receiver": userId,
     "min_api_version": 7,
     "type": "rich_media",
     "sender": { "name": "Асистент" },
     "rich_media": richmedia,
-    "tracking_data": JSON.stringify(tracking_data)
-  })
+    "tracking_data": tracking_data,
+    "keyboard": keyboard
+  }))
     .then(res => { console.debug("sendViberRichMedia POST response", res) })
     .catch(error => { console.error("sendViberRichMedia POST error", error) })
 }

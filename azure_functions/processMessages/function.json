@@ -6,7 +6,7 @@
       "direction": "in",
       "queueName": "incomingmessages",
       "connection": "AzureWebJobsStorage"
-    },    
+    },
     {
       "type": "table",
       "direction": "in",
@@ -35,6 +35,14 @@
       "direction": "out",
       "name": "wResultRequests",
       "tableName": "resultrequests",
+      "connection": "AzureWebJobsStorage"
+    },
+    {
+      "type": "table",
+      "direction": "in",
+      "name": "standardReplies",
+      "tableName": "standardreplies",
+      "take": "50",
       "connection": "AzureWebJobsStorage"
     }
   ]

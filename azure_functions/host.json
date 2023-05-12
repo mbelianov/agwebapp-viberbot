@@ -2,9 +2,9 @@
   "version": "2.0",
   "logging": {
     "logLevel": {
-      "Function.processMessages": "None",
+      "Function.processMessages": "Trace",
       "Function.healthcheck": "Information",
-      "Function.newMessage": "Information",
+      "Function.newMessage": "None",
       "default": "None"
     },
     "applicationInsights": {
