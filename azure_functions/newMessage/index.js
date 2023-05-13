@@ -38,16 +38,18 @@ module.exports = async function (context, req) {
                 }
             }
             else {
+                /*
                 let tracking_data = JSON.stringify({
                     timestamp: 0,
                     data: { current_task: "", current_subtask: "" }
                 })
+                */
 
                 context.res = {
                     body: {
                         "sender": { "name": "Асистент" }, "type": "text",
                         "text": "Изберете как да Ви помогна.",
-                        "tracking_data": tracking_data,
+                        //"tracking_data": tracking_data,
                         "keyboard": {
                             "Type": "keyboard",
                             "Buttons": [button("Резултати", "---results", 3, 2), button("Друго/Помощ", "---help", 3, 2)]

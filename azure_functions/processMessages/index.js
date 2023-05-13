@@ -79,7 +79,7 @@ module.exports = async function (context, myQueueItem) {
         )
       }
 
-      rp = /^\?idnap=[0-9]+&pass=[0-9]+$/gi  //doctor fetching exam results of specific patient from bodibmed DB
+      rp = /^\?idnap=[0-9]+&pass=[0-9]+$/gi  //doctor fetching exam results for specific patient from bodibmed DB
       if (rp.test(myQueueItem.message.text)) {
         let tracking_data = JSON.parse(myQueueItem.message.tracking_data)
         var a2pClient = new Api2Pdf(process.env.API2PDF_KEY);
@@ -95,10 +95,11 @@ module.exports = async function (context, myQueueItem) {
               "tracking_data": JSON.stringify({
                 timestamp: 0,
                 data: {
-                  current_task: "result_interpretation",
+                  current_task: "result_interpretation", conversation_stage: "present-results",
                   parameters: {
                     resultUrl: result.FileUrl,
                     patientViberId: tracking_data.data.parameters.patientViberId || "",
+                    patientViberName: tracking_data.data.parameters.patientViberName || ""
                   }
                 }
               }),
@@ -112,6 +113,8 @@ module.exports = async function (context, myQueueItem) {
                 ]
               }
             };
+
+            await sendViberMessage(myQueueItem.sender.id, `Заявка от ${tracking_data.data.parameters.patientViberName}`)
 
             return await myAxios.post('/pa/send_message', msgData)
               .then(res => { context.log.verbose("send_message POST result: ", res) })
@@ -140,9 +143,10 @@ module.exports = async function (context, myQueueItem) {
             JSON.stringify({
               timestamp: 0,
               data: {
-                current_task: "results", current_subtask: "fetch_results",
+                current_task: "results", current_subtask: "fetch_results", conversation_stage: "processing-results-request",
                 parameters: {
-                  patientViberId: request.patientViberId
+                  patientViberId: request.patientViberId,
+                  patientViberName: request.patientViberName
                 }
               }
             }),
@@ -171,12 +175,13 @@ module.exports = async function (context, myQueueItem) {
         let tracking_data = JSON.parse(myQueueItem.message.tracking_data)
         let patientViberId = tracking_data.data.parameters.patientViberId;
         let resultUrl = tracking_data.data.parameters.resultUrl;
+        let patientViberName = tracking_data.data.parameters.patientViberName;
 
         await sendViberUrlMessages(patientViberId, [resultUrl]);
         await sendViberMessage(patientViberId, reply);
 
         return await sendViberMessage(myQueueItem.sender.id,
-          "Готово.",
+          `Изпратено на ${patientViberName}`,
           "",
           {
             "Type": "keyboard",
@@ -238,16 +243,13 @@ module.exports = async function (context, myQueueItem) {
         .catch(error => { context.log.error(error) })
     }
 
-    let tracking_data = myQueueItem.message.tracking_data ? JSON.parse(myQueueItem.message.tracking_data) : { timestamp: 0, data: {} };
+    let tracking_data = myQueueItem.message.tracking_data ? JSON.parse(myQueueItem.message.tracking_data) : { timestamp: Date.now(), data: {} };
 
     rp = /^---start/gi
-    if (rp.test(myQueueItem.message.text) || (tracking_data.data.current_task != "" && tracking_data.timestamp < (Date.now() - 600 * 1000) /*timeout*/)) {
+    if (rp.test(myQueueItem.message.text) || (tracking_data.timestamp < (Date.now() - 600 * 1000) /*timeout*/)) {
       return await sendViberMessage(myQueueItem.sender.id,
         "Изберете как да Ви помогна.",
-        JSON.stringify({
-          timestamp: 0,
-          data: { current_task: "", current_subtask: "" }
-        }),
+        null,
         {
           "Type": "keyboard",
           "Buttons": [button("Резултати", "---results", 3, 2), button("Друго/Помощ", "---help", 3, 2)]
@@ -259,10 +261,7 @@ module.exports = async function (context, myQueueItem) {
       if (registeredRequests.length > 99)
         return await sendViberMessage(myQueueItem.sender.id,
           "Съжалявам, в момента имаме твърде много чакащи пациенти. Моля опитайте пак след няколко часа.",
-          JSON.stringify({
-            timestamp: 0,
-            data: { current_task: "", current_subtask: "" }
-          }),
+          null,
           {
             "Type": "keyboard",
             "Buttons": [button("Резултати", "---results", 3, 2), button("Друго/Помощ", "---help", 3, 2)]
@@ -272,7 +271,7 @@ module.exports = async function (context, myQueueItem) {
         "Въведете на кирилица Вашето първо име и ЕГН разделени с интервал.",
         JSON.stringify({
           timestamp: Date.now(),
-          data: { current_task: "results", current_subtask: "collect_name" }
+          data: { conversation_stage: "check-results-request" }
         }),
         {
           "Type": "keyboard",
@@ -281,7 +280,7 @@ module.exports = async function (context, myQueueItem) {
     }
 
     rp = /^[a-zа-я]{1,} [0-9]{10}$/gi
-    if (rp.test(myQueueItem.message.text) && tracking_data.data.current_task == "results" && tracking_data.data.current_subtask == "collect_name") {
+    if (rp.test(myQueueItem.message.text) && (tracking_data.data.conversation_stage == "check-results-request")) {
       if (registeredRequests.findIndex(req => req.patientViberId == myQueueItem.sender.id) == -1) { // new request
         context.bindings.wResultRequests = [];
         context.bindings.wResultRequests.push({
@@ -298,10 +297,7 @@ module.exports = async function (context, myQueueItem) {
 
       return await sendViberMessage(myQueueItem.sender.id,
         "Вашата заявка е приета. Д-р Арабаджикова ще Ви информира за Вашите резултати в срок от един работен ден..",
-        JSON.stringify({
-          timestamp: 0,
-          data: { current_task: "", current_subtask: "" }
-        }),
+        null,
         {
           "Type": "keyboard",
           "Buttons": [{
@@ -315,10 +311,7 @@ module.exports = async function (context, myQueueItem) {
     if (rp.test(myQueueItem.message.text)) {
       return await sendViberMessage(myQueueItem.sender.id,
         "За да заявите проверка на резултати от изследвания, изберете 'Резултати' от началното меню и следвайте точно инструкциите на асистента.",
-        JSON.stringify({
-          timestamp: 0,
-          data: { current_task: "", current_subtask: "" }
-        }),
+        null,
         {
           "Type": "keyboard",
           "Buttons": [button("Към началното меню", "---start")]
@@ -327,10 +320,7 @@ module.exports = async function (context, myQueueItem) {
 
     return await sendViberMessage(myQueueItem.sender.id,
       "Не ви разбрах. Моля започнете от начало.",
-      JSON.stringify({
-        timestamp: 0,
-        data: { current_task: "", current_subtask: "" }
-      }),
+      null,
       {
         "Type": "keyboard",
         "Buttons": [button("Към началното меню", "---start")]
@@ -467,7 +457,7 @@ async function sendViberUrlMessages(userId, urlList, tracking_data = "") {
   }))
 }
 
-async function sendViberMessage(userId, messageInput, tracking_data = "", keyboard = null) {
+async function sendViberMessage(userId, messageInput, tracking_data = null, keyboard = null) {
   await myAxios.post('/pa/send_message', removeNullParams({
     "receiver": userId,
     "min_api_version": 1,
@@ -481,7 +471,7 @@ async function sendViberMessage(userId, messageInput, tracking_data = "", keyboa
     .catch(error => { console.error("sendViberMessage POST error", error) })
 }
 
-async function sendViberRichMedia(userId, richmedia, tracking_data = "", keyboard = null) {
+async function sendViberRichMedia(userId, richmedia, tracking_data = null, keyboard = null) {
   await myAxios.post('/pa/send_message', removeNullParams({
     "receiver": userId,
     "min_api_version": 7,
