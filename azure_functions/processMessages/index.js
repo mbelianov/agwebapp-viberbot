@@ -8,7 +8,8 @@ const { button } = require("../common/keyboard_buttons");
 const { concatHexCharCode, removeNullParams } = require("../common/support_functions");
 
 const connectionString = process.env.AzureWebJobsStorage;
-const client = TableClient.fromConnectionString(connectionString, "resultrequests");
+const requestsTable = TableClient.fromConnectionString(connectionString, "resultrequests");
+const patientsDBtable = TableClient.fromConnectionString(connectionString, "patientsDB");
 
 const myAxios = axios.create({
   baseURL: 'https://chatapi.viber.com',
@@ -156,12 +157,12 @@ module.exports = async function (context, myQueueItem) {
             }
           )
 
-          return await client.deleteEntity(request.PartitionKey, request.RowKey)
+          return await requestsTable.deleteEntity(request.PartitionKey, request.RowKey)
             .catch(error => context.log.error("error delete entity from resultrequests table. ", error));;
         }
         else {
           return await sendViberMessage(myQueueItem.sender.id,
-            "Няма чакаши заявки", "",
+            "Няма чакаши заявки", null,
             {
               "Type": "keyboard",
               "Buttons": [button("Нова проверка", "---resultrequests")]
@@ -191,10 +192,10 @@ module.exports = async function (context, myQueueItem) {
 
     } // end of doctor section
 
-    let re_000 = /^---add uin:[0-9]{10}pass:[a-zа-я0-9]{1,}$/gi //new user in Doctor role
+    rp = /^---add uin:[0-9]{10}pass:[a-zа-я0-9]{1,}$/gi //new user in Doctor role
     let re_000_uin = /uin:[0-9]{10}/gi
     let re_000_pass = /pass:[a-zа-я0-9]{1,}/gi
-    if (re_000.test(myQueueItem.message.text)) {
+    if (rp.test(myQueueItem.message.text)) {
       let reply = "Вие сте оторизиран.";
 
       if (doctors.length >= 50) {// max 50 users with a 'Doctor' role
@@ -217,36 +218,24 @@ module.exports = async function (context, myQueueItem) {
         }
       }
 
-      return await myAxios.post('/pa/send_message', {
-        "receiver": myQueueItem.sender.id,
-        "min.api.version": 1,
-        "type": "text",
-        "sender": { "name": "Асистент" },
-        "text": reply
-      })
-        .then(res => { context.log.verbose(res) })
-        .catch(error => { context.log.error(error) })
+      return await sendViberMessage(myQueueItem.sender.id, reply);
     }
 
-    let re_003 = /^---delete uin:[0-9]{10}$/gi //delete this profile from doctors table
-    if (re_003.test(myQueueItem.message.text)) {
-      let reply = "Тази операция още не се поддържа.";
-
-      return await myAxios.post('/pa/send_message', {
-        "receiver": myQueueItem.sender.id,
-        "min_api_version": 1,
-        "type": "text",
-        "sender": { "name": "Асистент" },
-        "text": reply
-      })
-        .then(res => { context.log.verbose(res) })
-        .catch(error => { context.log.error(error) })
+    rp = /^---delete uin:[0-9]{10}$/gi //delete this profile from doctors table
+    if (rp.test(myQueueItem.message.text)) {
+      return await sendViberMessage(myQueueItem.sender.id, "Тази операция още не се поддържа.");
     }
 
     let tracking_data = myQueueItem.message.tracking_data ? JSON.parse(myQueueItem.message.tracking_data) : { timestamp: Date.now(), data: {} };
 
     rp = /^---start/gi
     if (rp.test(myQueueItem.message.text) || (tracking_data.timestamp < (Date.now() - 600 * 1000) /*timeout*/)) {
+      if (rp.test(myQueueItem.message.text)) { //create patient DB for CRM purposes
+        await patientsDBtable.upsertEntity({ partitionKey: "p1", rowKey: concatHexCharCode(myQueueItem.sender.id), patientViberProfile: JSON.stringify(myQueueItem.sender) }, "Replace")
+          .then(res => context.log.verbose("upsert response: ", res))
+          .catch(error => context.log.error("error upsert entity in patientsDB.", error));
+      }
+
       return await sendViberMessage(myQueueItem.sender.id,
         "Изберете как да Ви помогна.",
         null,

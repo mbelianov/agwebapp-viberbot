@@ -18,11 +18,10 @@ module.exports = async function (context, req) {
 
     if (hash === req.headers['x-viber-content-signature']) {
         if (req.body.event === "message") {
-            //context.log(`-- event type is "${req.body.event}": putting in the queue`)
             context.bindings.incomeMsgQueue = req.body;
-            await client.upsertEntity({ partitionKey: "p1", rowKey: concatHexCharCode(req.body.sender.id), patientViberProfile: JSON.stringify(req.body.sender)}, "Replace")
-                .then(res => context.log.verbose("upsert response: ", res))
-                .catch(error => context.log.error("error upsert entity in patientsDB.", error));
+//            await client.upsertEntity({ partitionKey: "p1", rowKey: concatHexCharCode(req.body.sender.id), patientViberProfile: JSON.stringify(req.body.sender)}, "Replace")
+//                .then(res => context.log.verbose("upsert response: ", res))
+//                .catch(error => context.log.error("error upsert entity in patientsDB.", error));
         } else if (req.body.event === "conversation_started") {
             if (!req.body.subscribed) {
                 context.res = {
@@ -60,7 +59,7 @@ module.exports = async function (context, req) {
             return
         } else if (req.body.event === "unsubscribed") {
             await client.deleteEntity("p1", req.body.user_id)
-                .catch(error => console.error("error deleting unsubsribed client from patientsDB", error))
+                .catch(error => context.log.error("error deleting unsubsribed client from patientsDB", error))
         } else
             context.log(`-- event type is "${req.body.event}": discarding`)
     } else
