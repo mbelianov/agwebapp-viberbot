@@ -63,16 +63,25 @@ module.exports = async function (context, myQueueItem) {
 
         await sendViberMessage(myQueueItem.sender.id,
           `${count} от ${patients.patientsList.length}`,
-          "",
+          null,
           {
             "Type": "keyboard",
             "Buttons": [button(`Следващ (${registeredRequests.length})`, "---resultrequests")]
           }
         )
 
+        let tracking_data = myQueueItem.message.tracking_data || {
+          timestamp: 0,
+          data:{
+            conversation_stage:"fetch-patient-name",
+            parameters:{
+            }
+          }
+        }
+
         return await sendViberRichMedia(myQueueItem.sender.id,
           richMediaContent,
-          myQueueItem.message.tracking_data || "",
+          JSON.stringify(tracking_data),
           {
             "Type": "keyboard",
             "Buttons": [button(`Следващ (${registeredRequests.length})`, "---resultrequests")]
@@ -115,7 +124,7 @@ module.exports = async function (context, myQueueItem) {
               }
             };
 
-            await sendViberMessage(myQueueItem.sender.id, `Заявка от ${tracking_data.data.parameters.patientViberName}`)
+            await sendViberMessage(myQueueItem.sender.id, `Заявка от ${tracking_data.data.parameters.patientViberName || "---"}`)
 
             return await myAxios.post('/pa/send_message', msgData)
               .then(res => { context.log.verbose("send_message POST result: ", res) })
