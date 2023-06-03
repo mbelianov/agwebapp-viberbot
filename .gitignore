@@ -1,5 +1,6 @@
 node_modules
 localdev-config.json
+*.exe
 
 # Azurite artifacts
 __blobstorage__

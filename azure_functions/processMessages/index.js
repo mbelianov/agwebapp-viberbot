@@ -1,13 +1,17 @@
 const axios = require('axios');
 const Api2Pdf = require('api2pdf');
-const bodimed = require('./helpers/bodimed_connect');
+//const bodimed = require('./helpers/bodimed_connect');
+const bodimed = require('../common/bodimed_connect');
 const AssistantV2 = require('ibm-watson/assistant/v2');
 const { IamAuthenticator } = require('ibm-watson/auth');
 const { TableClient } = require("@azure/data-tables");
 const { button } = require("../common/keyboard_buttons");
 const { concatHexCharCode, removeNullParams } = require("../common/support_functions");
+const mltools = require ("./helpers/mltools")
 
 const connectionString = process.env.AzureWebJobsStorage;
+const containerName = process.env.TRAINING_DATA_CONTAINER_NAME;
+const textClassificationProjectFile = process.env.TEXT_CLASSIFICATION_PROJECT_FILE;
 const requestsTable = TableClient.fromConnectionString(connectionString, "resultrequests");
 const patientsDBtable = TableClient.fromConnectionString(connectionString, "patientsDB");
 
@@ -94,6 +98,9 @@ module.exports = async function (context, myQueueItem) {
         let tracking_data = JSON.parse(myQueueItem.message.tracking_data)
         var a2pClient = new Api2Pdf(process.env.API2PDF_KEY);
         const result = await bodimed.getResults(context, myQueueItem.message.text);
+        const mldata = result.outcome.mldata;
+        //const blobName = await mltools.createAzureBlob(connectionString, containerName, mldata);
+        //await mltools.updateProjectFile(connectionString, containerName, blobName, textClassificationProjectFile);
         return await a2pClient.chromeHtmlToImage(result.result)
           .then(async (result) => {
             const msgData = {
@@ -108,6 +115,7 @@ module.exports = async function (context, myQueueItem) {
                   current_task: "result_interpretation", conversation_stage: "present-results",
                   parameters: {
                     resultUrl: result.FileUrl,
+                    blobName: blobName,
                     patientViberId: tracking_data.data.parameters.patientViberId || "",
                     patientViberName: tracking_data.data.parameters.patientViberName || ""
                   }
@@ -116,9 +124,9 @@ module.exports = async function (context, myQueueItem) {
               "keyboard": {
                 "Type": "keyboard",
                 "Buttons": [
-                  button(`${stdReplies[0].text}`, `---interpretation|${stdReplies[0].reply}`, 2, 1),
-                  button(`${stdReplies[1].text}`, `---interpretation|${stdReplies[1].reply}`, 2, 1),
-                  button(`${stdReplies[2].text}`, `---interpretation|${stdReplies[2].reply}`, 2, 1),
+                  button(`${stdReplies[0].text}`, `---interpretation|${stdReplies[0].reply|Cat1}`, 2, 1),
+                  button(`${stdReplies[1].text}`, `---interpretation|${stdReplies[1].reply|Cat2}`, 2, 1),
+                  button(`${stdReplies[2].text}`, `---interpretation|${stdReplies[2].reply|Cat3}`, 2, 1),
                   button(`Следващ (${registeredRequests.length})`, "---resultrequests")
                 ]
               }
@@ -127,7 +135,11 @@ module.exports = async function (context, myQueueItem) {
             await sendViberMessage(myQueueItem.sender.id, `Заявка от ${tracking_data.data.parameters.patientViberName || "---"}`)
 
             return await myAxios.post('/pa/send_message', msgData)
-              .then(res => { context.log.verbose("send_message POST result: ", res) })
+              .then(async res => {
+                const blobName = await mltools.createAzureBlob(connectionString, containerName, mldata);
+                await mltools.updateProjectFile(connectionString, containerName, blobName, textClassificationProjectFile); 
+                //context.log.verbose("send_message POST result: ", res)
+              })
               .catch(error => { context.log.error("send_message POST error: ", error) })
 
           })
@@ -167,7 +179,7 @@ module.exports = async function (context, myQueueItem) {
           )
 
           return await requestsTable.deleteEntity(request.PartitionKey, request.RowKey)
-            .catch(error => context.log.error("error delete entity from resultrequests table. ", error));;
+            .catch(error => context.log.error("error delete entity from resultrequests table. ", error));
         }
         else {
           return await sendViberMessage(myQueueItem.sender.id,
@@ -179,20 +191,25 @@ module.exports = async function (context, myQueueItem) {
         }
       }
 
-      rp = /^---interpretation\|.{1,}$/gi //doctor provides instructions to the bot what to reply to the patient
+      rp = /^---interpretation\|.{1,}\|Cat[1-3]$/gi //doctor provides instructions to the bot what to reply to the patient
+                                                  //the bot also stores the results in Azure Blob and clasifies the reply
+                                                  //later, stored data will be used to train a text classification project and 
+                                                  //automate the analysis of the exams.
       if (rp.test(myQueueItem.message.text)) {
-        let reply = myQueueItem.message.text.split("|")[1];
-        let tracking_data = JSON.parse(myQueueItem.message.tracking_data)
-        let patientViberId = tracking_data.data.parameters.patientViberId;
-        let resultUrl = tracking_data.data.parameters.resultUrl;
-        let patientViberName = tracking_data.data.parameters.patientViberName;
+        const reply = myQueueItem.message.text.split("|")[1];
+        const category = myQueueItem.message.text.split("|")[2];
+        const tracking_data = JSON.parse(myQueueItem.message.tracking_data)
+        const patientViberId = tracking_data.data.parameters.patientViberId;
+        const resultUrl = tracking_data.data.parameters.resultUrl;
+        const patientViberName = tracking_data.data.parameters.patientViberName;
+        const blobName = tracking_data.data.parameters.blobName;
 
+        await mltools.updateProjectFile(connectionString, containerName, blobName, textClassificationProjectFile, category);
         await sendViberUrlMessages(patientViberId, [resultUrl]);
         await sendViberMessage(patientViberId, reply);
 
         return await sendViberMessage(myQueueItem.sender.id,
-          `Изпратено на ${patientViberName}`,
-          "",
+          `Изпратено на ${patientViberName}`, null,
           {
             "Type": "keyboard",
             "Buttons": [button(`Следващ (${registeredRequests.length - 1})`, "---resultrequests")]
@@ -294,8 +311,7 @@ module.exports = async function (context, myQueueItem) {
       }
 
       return await sendViberMessage(myQueueItem.sender.id,
-        "Вашата заявка е приета. Д-р Арабаджикова ще Ви информира за Вашите резултати в срок от един работен ден..",
-        null,
+        "Вашата заявка е приета. Д-р Арабаджикова ще Ви информира за Вашите резултати в срок от един работен ден.", null,
         {
           "Type": "keyboard",
           "Buttons": [{

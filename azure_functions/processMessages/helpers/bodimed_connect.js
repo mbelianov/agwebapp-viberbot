@@ -14,7 +14,7 @@ exports.getResults = (context, query) => {
 
   let headersList = {
     "Accept": "*/*",
-    "User-Agent": "Thunder Client (https://www.thunderclient.io)",
+    "User-Agent": "Axios Client",
     "Content-Type": "application/x-www-form-urlencoded" 
    }
    

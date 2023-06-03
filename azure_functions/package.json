@@ -8,6 +8,7 @@
   },
   "dependencies": {
     "@azure/data-tables": "^13.2.2",
+    "@azure/storage-blob": "^12.14.0",
     "api2pdf": "^2.0.1",
     "axios": "^0.24.0",
     "cheerio": "^1.0.0-rc.10",

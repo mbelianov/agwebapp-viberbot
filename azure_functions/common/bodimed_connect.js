@@ -14,7 +14,7 @@ exports.getResults = (context, query) => {
 
   let headersList = {
     "Accept": "*/*",
-    "User-Agent": "Thunder Client (https://www.thunderclient.io)",
+    "User-Agent": "Axios Client",
     "Content-Type": "application/x-www-form-urlencoded"
   }
 
@@ -44,20 +44,24 @@ exports.getResults = (context, query) => {
 
 extractOutcome = (azf_context, exam_protocol) => {
   const $ = cheerio.load(exam_protocol);
+  const organics = $("body > p:nth-child(2) > table.table-border > tbody > tr:nth-child(1) > td > table > tbody > tr:nth-child(4) > td").text().trim().replace(/\s+/g, ' ');
+  const conclusion = $("body > p:nth-child(2) > table.table-border > tbody > tr:nth-child(1) > td > table > tbody > tr:nth-child(7) > td").text().trim().replace(/\s+/g, ' ');
+  const recommendation = $("body > p:nth-child(2) > table.table-border > tbody > tr:nth-child(1) > td > table > tbody > tr:nth-child(8) > td").text().trim().replace(/\s+/g, ' ');
 
   return {
     name: $("body > p:nth-child(2) > span.text-md > strong").text().trim(),
+    mldata: organics+conclusion+recommendation,
     results: [{
       title: $("body > p:nth-child(2) > table.table-border > tbody > tr:nth-child(1) > td > table > tbody > tr:nth-child(1) > td").text().trim().replace(/\s+/g, ' '),
       type: $("body > p:nth-child(2) > table.table-border > tbody > tr:nth-child(1) > td > table > tbody > tr:nth-child(2) > td.bottom_right.print_col_left.text-lg").text().trim().replace(/\s+/g, ' '),
       conclusion: $("body > p:nth-child(2) > table.table-border > tbody > tr:nth-child(1) > td > table > tbody > tr:nth-child(7) > td").text().trim().replace(/\s+/g, ' '),
-      recomendation: $("body > p:nth-child(2) > table.table-border > tbody > tr:nth-child(1) > td > table > tbody > tr:nth-child(8) > td").text().trim().replace(/\s+/g, ' '),
+      recommendation: $("body > p:nth-child(2) > table.table-border > tbody > tr:nth-child(1) > td > table > tbody > tr:nth-child(8) > td").text().trim().replace(/\s+/g, ' '),
     },
     {
       title: $("body > p:nth-child(2) > table.table-border > tbody > tr:nth-child(2) > td > table > tbody > tr:nth-child(1) > td").text().trim().replace(/\s+/g, ' '),
       type: $("body > p:nth-child(2) > table.table-border > tbody > tr:nth-child(2) > td > table > tbody > tr:nth-child(2) > td.bottom_right.print_col_left.text-lg").text().trim().replace(/\s+/g, ' '),
       conclusion: $("body > p:nth-child(2) > table.table-border > tbody > tr:nth-child(2) > td > table > tbody > tr:nth-child(7) > td").text().trim().replace(/\s+/g, ' '),
-      recomendation: $("body > p:nth-child(2) > table.table-border > tbody > tr:nth-child(2) > td > table > tbody > tr:nth-child(8) > td").text().trim().replace(/\s+/g, ' ')
+      recommendation: $("body > p:nth-child(2) > table.table-border > tbody > tr:nth-child(2) > td > table > tbody > tr:nth-child(8) > td").text().trim().replace(/\s+/g, ' ')
     }]}
 }
 
@@ -88,7 +92,7 @@ exports.getPatients = (context, filter_string, filter_type = "name") => {
   }
 
   let _ot = '01.08.2121'; //just default date
-  d = new Date(d.getTime() - 30 * 24 * 3600 * 1000);
+  d = new Date(d.getTime() - 5 * 30 * 24 * 3600 * 1000);
   if (d != "Invalid Date") {
     let dd = d.getDate();
     let mm = d.getMonth() + 1;
