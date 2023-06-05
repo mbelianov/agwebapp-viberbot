@@ -7,7 +7,7 @@ const { IamAuthenticator } = require('ibm-watson/auth');
 const { TableClient } = require("@azure/data-tables");
 const { button } = require("../common/keyboard_buttons");
 const { concatHexCharCode, removeNullParams } = require("../common/support_functions");
-const mltools = require ("./helpers/mltools")
+const mltools = require("./helpers/mltools")
 
 const connectionString = process.env.AzureWebJobsStorage;
 const containerName = process.env.TRAINING_DATA_CONTAINER_NAME;
@@ -49,108 +49,12 @@ module.exports = async function (context, myQueueItem) {
 
     if (i != -1) { // doctor section
 
-      rp = /^[a-zа-я]{1,}$/gi  //doctor searching for a patient in bodimed DB
-      if (rp.test(myQueueItem.message.text)) {
-        const patients = await bodimed.getPatients(context, myQueueItem.message.text);
-        let count = 0;
-        richMediaContent["Buttons"].length = 0;
-        patients.patientsList.forEach(patient => { // prepare reply with first 9 patients from Bodimed DB
-          if (count < 9) { // we show only first 9 patients
-            count++
-            richMediaContent["Buttons"].push({
-              "Columns": 6, "Rows": 2, "ActionType": "reply", "TextHAlign": "left",
-              "Text": `<font color=#323232><b>${patient.bodimed_patient_name} ${patient.bodimed_patient_surname} ${patient.bodimed_patient_familyname}</b></font><font color=#777777><br>ЕГН: ${patient.bodimed_patient_egn}</font>`,
-              "ActionBody": `?idnap=${patient.bodimed_patient_id}&pass=${patient.bodimed_patient_password}`,
-            })
-          }
-        })
-
-        await sendViberMessage(myQueueItem.sender.id,
-          `${count} от ${patients.patientsList.length}`,
-          null,
-          {
-            "Type": "keyboard",
-            "Buttons": [button(`Следващ (${registeredRequests.length})`, "---resultrequests")]
-          }
-        )
-
-        let tracking_data = myQueueItem.message.tracking_data || {
-          timestamp: 0,
-          data:{
-            conversation_stage:"fetch-patient-name",
-            parameters:{
-            }
-          }
-        }
-
-        return await sendViberRichMedia(myQueueItem.sender.id,
-          richMediaContent,
-          JSON.stringify(tracking_data),
-          {
-            "Type": "keyboard",
-            "Buttons": [button(`Следващ (${registeredRequests.length})`, "---resultrequests")]
-          }
-        )
-      }
-
-      rp = /^\?idnap=[0-9]+&pass=[0-9]+$/gi  //doctor fetching exam results for specific patient from bodibmed DB
-      if (rp.test(myQueueItem.message.text)) {
-        let tracking_data = JSON.parse(myQueueItem.message.tracking_data)
-        var a2pClient = new Api2Pdf(process.env.API2PDF_KEY);
-        const result = await bodimed.getResults(context, myQueueItem.message.text);
-        const mldata = result.outcome.mldata;
-        //const blobName = await mltools.createAzureBlob(connectionString, containerName, mldata);
-        //await mltools.updateProjectFile(connectionString, containerName, blobName, textClassificationProjectFile);
-        return await a2pClient.chromeHtmlToImage(result.result)
-          .then(async (result) => {
-            const msgData = {
-              "receiver": myQueueItem.sender.id,
-              "min_api_version": 1,
-              "type": "url",
-              "sender": { "name": "Асистент" },
-              "media": result.FileUrl,
-              "tracking_data": JSON.stringify({
-                timestamp: 0,
-                data: {
-                  current_task: "result_interpretation", conversation_stage: "present-results",
-                  parameters: {
-                    resultUrl: result.FileUrl,
-                    blobName: blobName,
-                    patientViberId: tracking_data.data.parameters.patientViberId || "",
-                    patientViberName: tracking_data.data.parameters.patientViberName || ""
-                  }
-                }
-              }),
-              "keyboard": {
-                "Type": "keyboard",
-                "Buttons": [
-                  button(`${stdReplies[0].text}`, `---interpretation|${stdReplies[0].reply|Cat1}`, 2, 1),
-                  button(`${stdReplies[1].text}`, `---interpretation|${stdReplies[1].reply|Cat2}`, 2, 1),
-                  button(`${stdReplies[2].text}`, `---interpretation|${stdReplies[2].reply|Cat3}`, 2, 1),
-                  button(`Следващ (${registeredRequests.length})`, "---resultrequests")
-                ]
-              }
-            };
-
-            await sendViberMessage(myQueueItem.sender.id, `Заявка от ${tracking_data.data.parameters.patientViberName || "---"}`)
-
-            return await myAxios.post('/pa/send_message', msgData)
-              .then(async res => {
-                const blobName = await mltools.createAzureBlob(connectionString, containerName, mldata);
-                await mltools.updateProjectFile(connectionString, containerName, blobName, textClassificationProjectFile); 
-                //context.log.verbose("send_message POST result: ", res)
-              })
-              .catch(error => { context.log.error("send_message POST error: ", error) })
-
-          })
-          .catch(error => { context.log.error("api2pdf error: ", error) });
-      }
-
       rp = /^---resultrequests$/gi //doctor asking for first patient in the queue
       if (rp.test(myQueueItem.message.text)) {
         if (registeredRequests.length > 0) {
-          let request = registeredRequests[0];
-          let reply = { // prepare reply
+          const request = registeredRequests[0];
+
+          const reply = { // prepare reply
             "ButtonsGroupColumns": 6,
             "ButtonsGroupRows": 2,
             "Buttons": [{
@@ -160,18 +64,19 @@ module.exports = async function (context, myQueueItem) {
             }]
           }
 
-          await sendViberRichMedia(myQueueItem.sender.id,
-            reply,
-            JSON.stringify({
-              timestamp: 0,
-              data: {
-                current_task: "results", current_subtask: "fetch_results", conversation_stage: "processing-results-request",
-                parameters: {
-                  patientViberId: request.patientViberId,
-                  patientViberName: request.patientViberName
-                }
+          const track_data = {
+            timestamp: 0,
+            data: {
+              conversation_stage: "processing-results-request", //current_task: "results", current_subtask: "fetch_results", 
+              parameters: {
+                patientViberId: request.patientViberId,
+                patientViberName: request.patientViberName
               }
-            }),
+            }
+          }
+
+          await sendViberRichMedia(myQueueItem.sender.id,
+            reply, JSON.stringify(track_data),
             {
               "Type": "keyboard",
               "Buttons": [button(`Следващ (${registeredRequests.length - 1})`, "---resultrequests")]
@@ -191,10 +96,105 @@ module.exports = async function (context, myQueueItem) {
         }
       }
 
+      rp = /^[a-zа-я]{1,}$/gi  //doctor searching for a patient in bodimed DB
+      if (rp.test(myQueueItem.message.text)) {
+        const patients = await bodimed.getPatients(context, myQueueItem.message.text);
+        let count = 0;
+        richMediaContent["Buttons"].length = 0;
+        patients.patientsList.forEach(patient => { // prepare reply with first 9 patients from Bodimed DB
+          if (count < 9) { // we show only first 9 patients
+            count++
+            richMediaContent["Buttons"].push({
+              "Columns": 6, "Rows": 2, "ActionType": "reply", "TextHAlign": "left",
+              "Text": `<font color=#323232><b>${patient.bodimed_patient_name} ${patient.bodimed_patient_surname} ${patient.bodimed_patient_familyname}</b></font><font color=#777777><br>ЕГН: ${patient.bodimed_patient_egn}</font>`,
+              "ActionBody": `?idnap=${patient.bodimed_patient_id}&pass=${patient.bodimed_patient_password}`,
+            })
+          }
+        })
+
+        await sendViberMessage(myQueueItem.sender.id,
+          `${count} от ${patients.patientsList.length}`, null,
+          {
+            "Type": "keyboard",
+            "Buttons": [button(`Следващ (${registeredRequests.length})`, "---resultrequests")]
+          }
+        )
+
+        const tracking_data = myQueueItem.message.tracking_data || JSON.stringify({
+          timestamp: 0,
+          data: {
+            conversation_stage: "fetch-patient-name-from-bodimedDB",
+            parameters: {
+            }
+          }
+        })
+
+        return await sendViberRichMedia(myQueueItem.sender.id,
+          richMediaContent, tracking_data,
+          {
+            "Type": "keyboard",
+            "Buttons": [button(`Следващ (${registeredRequests.length})`, "---resultrequests")]
+          }
+        )
+      }
+
+      rp = /^\?idnap=[0-9]+&pass=[0-9]+$/gi  //doctor fetching exam results for specific patient from bodibmed DB
+      if (rp.test(myQueueItem.message.text)) {
+        const tracking_data = JSON.parse(myQueueItem.message.tracking_data);
+        var a2pClient = new Api2Pdf(process.env.API2PDF_KEY);
+        const result = await bodimed.getResults(context, myQueueItem.message.text);
+        const mldata = result.outcome.mldata;
+        //const blobName = await mltools.createAzureBlob(connectionString, containerName, mldata);
+        //await mltools.updateProjectFile(connectionString, containerName, blobName, textClassificationProjectFile);
+        return await a2pClient.chromeHtmlToImage(result.result)
+          .then(async (result) => {
+            const msgData = {
+              "receiver": myQueueItem.sender.id,
+              "min_api_version": 1,
+              "type": "url",
+              "sender": { "name": "Асистент" },
+              "media": result.FileUrl,
+              "tracking_data": JSON.stringify({
+                timestamp: 0,
+                data: {
+                  conversation_stage: "present-results", current_task: "result_interpretation", 
+                  parameters: {
+                    resultUrl: result.FileUrl,
+                    blobName: null,//blobName,
+                    patientViberId: tracking_data.data.parameters.patientViberId || "",
+                    patientViberName: tracking_data.data.parameters.patientViberName || ""
+                  }
+                }
+              }),
+              "keyboard": {
+                "Type": "keyboard",
+                "Buttons": [
+                  button(`${stdReplies[0].text}`, `---interpretation|${stdReplies[0].reply}|Cat1`, 2, 1),
+                  button(`${stdReplies[1].text}`, `---interpretation|${stdReplies[1].reply}|Cat2`, 2, 1),
+                  button(`${stdReplies[2].text}`, `---interpretation|${stdReplies[2].reply}|Cat3`, 2, 1),
+                  button(`Следващ (${registeredRequests.length})`, "---resultrequests")
+                ]
+              }
+            };
+
+            await sendViberMessage(myQueueItem.sender.id, `Заявка от ${tracking_data.data.parameters.patientViberName || "---"}`)
+
+            return await myAxios.post('/pa/send_message', msgData)
+              .then(async res => {
+                //const blobName = await mltools.createAzureBlob(connectionString, containerName, mldata);
+                //await mltools.updateProjectFile(connectionString, containerName, blobName, textClassificationProjectFile);
+                //context.log.verbose("send_message POST result: ", res)
+              })
+              .catch(error => { context.log.error("send_message POST error: ", error) })
+
+          })
+          .catch(error => { context.log.error("api2pdf error: ", error) });
+      }
+
       rp = /^---interpretation\|.{1,}\|Cat[1-3]$/gi //doctor provides instructions to the bot what to reply to the patient
-                                                  //the bot also stores the results in Azure Blob and clasifies the reply
-                                                  //later, stored data will be used to train a text classification project and 
-                                                  //automate the analysis of the exams.
+      //the bot also stores the results in Azure Blob and clasifies the reply
+      //later, stored data will be used to train a text classification project and 
+      //automate the analysis of the exams.
       if (rp.test(myQueueItem.message.text)) {
         const reply = myQueueItem.message.text.split("|")[1];
         const category = myQueueItem.message.text.split("|")[2];
@@ -204,7 +204,7 @@ module.exports = async function (context, myQueueItem) {
         const patientViberName = tracking_data.data.parameters.patientViberName;
         const blobName = tracking_data.data.parameters.blobName;
 
-        await mltools.updateProjectFile(connectionString, containerName, blobName, textClassificationProjectFile, category);
+        //await mltools.updateProjectFile(connectionString, containerName, blobName, textClassificationProjectFile, category);
         await sendViberUrlMessages(patientViberId, [resultUrl]);
         await sendViberMessage(patientViberId, reply);
 

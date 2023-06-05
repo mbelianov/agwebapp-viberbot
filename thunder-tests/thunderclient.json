@@ -46,7 +46,7 @@
     "method": "POST",
     "sortNum": 30000,
     "created": "2023-05-05T06:15:52.610Z",
-    "modified": "2023-05-10T18:36:56.886Z",
+    "modified": "2023-06-05T17:55:20.072Z",
     "headers": [
       {
         "name": "X-Viber-Auth-Token",
@@ -56,7 +56,31 @@
     "params": [],
     "body": {
       "type": "json",
-      "raw": "{\n   \"url\":\"https://dec5-46-238-15-223.ngrok-free.app/api/newMessage\",\n   \"event_types\":[\n      \"delivered\",\n      \"seen\",\n      \"failed\",\n      \"subscribed\",\n      \"unsubscribed\",\n      \"conversation_started\"\n   ],\n   \"send_name\": true,\n   \"send_photo\": true\n}",
+      "raw": "{\n   \"url\":\"https://819b-46-238-15-223.ngrok-free.app/api/newMessage\",\n   \"event_types\":[\n      \"delivered\",\n      \"seen\",\n      \"failed\",\n      \"subscribed\",\n      \"unsubscribed\",\n      \"conversation_started\"\n   ],\n   \"send_name\": true,\n   \"send_photo\": true\n}",
+      "form": []
+    },
+    "tests": []
+  },
+  {
+    "_id": "fbb33942-822d-4f17-bad1-6165bafcacc7",
+    "colId": "0817495d-9366-4422-a866-5a270c6843d9",
+    "containerId": "",
+    "name": "set_webhook_demo",
+    "url": "https://chatapi.viber.com/pa/set_webhook",
+    "method": "POST",
+    "sortNum": 40000,
+    "created": "2023-06-05T18:52:28.430Z",
+    "modified": "2023-06-05T18:53:10.207Z",
+    "headers": [
+      {
+        "name": "X-Viber-Auth-Token",
+        "value": "{{VIBER_AUTH_TOKEN_DEV}}"
+      }
+    ],
+    "params": [],
+    "body": {
+      "type": "json",
+      "raw": "{\n   \"url\":\"https://viberbot-demo.azurewebsites.net/api/newmessage?code=r9N22Ki2R9C_ZCUNvJCnJqcXVzWtJUbUS6gjhP3V4pn7AzFuPeBNMw%3D%3D\",\n   \"event_types\":[\n      \"delivered\",\n      \"seen\",\n      \"failed\",\n      \"subscribed\",\n      \"unsubscribed\",\n      \"conversation_started\"\n   ],\n   \"send_name\": true,\n   \"send_photo\": true\n}",
       "form": []
     },
     "tests": []

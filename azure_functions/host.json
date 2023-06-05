@@ -6,7 +6,7 @@
       "Function.processMessages": "Information",
       "Function.healthcheck": "Information",
       "Function.downloadBodimedDB": "Information",
-      "Function.newMessage": "None",
+      "Function.newMessage": "Information",
       "default": "None"
     },
     "applicationInsights": {

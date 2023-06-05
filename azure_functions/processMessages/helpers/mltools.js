@@ -58,11 +58,6 @@ async function streamToString(readableStream) {
 }
 
 
-updateBlobFileWithParameter(connectionString, containerName, blobName, inputParameter)
-  .catch((error) => {
-    console.error("An error occurred:", error);
-  });
-
 
 
 exports.createAzureBlob = async (connectionString, containerName, content) => {
@@ -93,10 +88,11 @@ exports.createAzureBlob = async (connectionString, containerName, content) => {
   return blobName;
 }
 
+/*
 createAzureBlob(connectionString, containerName, content)
   .then((blobName) => {
     console.log("Blob Name:", blobName);
   })
   .catch((error) => {
     console.error("Error creating Azure Blob:", error);
-  });
+  });*/
