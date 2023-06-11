@@ -64,7 +64,7 @@ module.exports = async function (context, myQueueItem) {
             }]
           }
 
-          const track_data = {
+          const track_data = JSON.stringify({
             timestamp: 0,
             data: {
               conversation_stage: "processing-results-request", //current_task: "results", current_subtask: "fetch_results", 
@@ -73,10 +73,10 @@ module.exports = async function (context, myQueueItem) {
                 patientViberName: request.patientViberName
               }
             }
-          }
+          })
 
           await sendViberRichMedia(myQueueItem.sender.id,
-            reply, JSON.stringify(track_data),
+            reply, track_data,
             {
               "Type": "keyboard",
               "Buttons": [button(`Следващ (${registeredRequests.length - 1})`, "---resultrequests")]
@@ -148,16 +148,15 @@ module.exports = async function (context, myQueueItem) {
         //await mltools.updateProjectFile(connectionString, containerName, blobName, textClassificationProjectFile);
         return await a2pClient.chromeHtmlToImage(result.result)
           .then(async (result) => {
-            const msgData = {
-              "receiver": myQueueItem.sender.id,
-              "min_api_version": 1,
-              "type": "url",
-              "sender": { "name": "Асистент" },
-              "media": result.FileUrl,
-              "tracking_data": JSON.stringify({
+
+            let track_data = null;
+            let kb = null;
+
+            if (tracking_data.data.parameters.patientViberId) {
+              track_data = JSON.stringify({
                 timestamp: 0,
                 data: {
-                  conversation_stage: "present-results", current_task: "result_interpretation", 
+                  conversation_stage: "present-results", current_task: "result_interpretation",
                   parameters: {
                     resultUrl: result.FileUrl,
                     blobName: null,//blobName,
@@ -165,8 +164,9 @@ module.exports = async function (context, myQueueItem) {
                     patientViberName: tracking_data.data.parameters.patientViberName || ""
                   }
                 }
-              }),
-              "keyboard": {
+              })
+
+              kb = {
                 "Type": "keyboard",
                 "Buttons": [
                   button(`${stdReplies[0].text}`, `---interpretation|${stdReplies[0].reply}|Cat1`, 2, 1),
@@ -175,10 +175,12 @@ module.exports = async function (context, myQueueItem) {
                   button(`Следващ (${registeredRequests.length})`, "---resultrequests")
                 ]
               }
-            };
+            }
 
-            await sendViberMessage(myQueueItem.sender.id, `Заявка от ${tracking_data.data.parameters.patientViberName || "---"}`)
+            if (tracking_data.data.parameters.patientViberName)
+              await sendViberMessage(myQueueItem.sender.id, `Заявка от ${tracking_data.data.parameters.patientViberName || "---"}`)
 
+            return await sendViberUrlMessages(myQueueItem.sender.id, [result.FileUrl], track_data, kb); 
             return await myAxios.post('/pa/send_message', msgData)
               .then(async res => {
                 //const blobName = await mltools.createAzureBlob(connectionString, containerName, mldata);
@@ -456,16 +458,27 @@ async function getExamResultReports(azf_context, patientId, patientId_type) {
   }))
 }
 
-async function sendViberUrlMessages(userId, urlList, tracking_data = "") {
+async function sendViberUrlMessages(userId, urlList, tracking_data = null, keyboard = null) {
   await Promise.all(urlList.map(async (url) => {
-    await myAxios.post('/pa/send_message', {
+    const t = removeNullParams({
       "receiver": userId,
       "min_api_version": 1,
       "type": "url",
       "sender": { "name": "Асистент" },
       "media": url,
-      "tracking_data": JSON.stringify(tracking_data)
+      "tracking_data": tracking_data,
+      "keyboard": keyboard
     })
+
+    await myAxios.post('/pa/send_message', removeNullParams({
+      "receiver": userId,
+      "min_api_version": 1,
+      "type": "url",
+      "sender": { "name": "Асистент" },
+      "media": url,
+      "tracking_data": tracking_data,
+      "keyboard": keyboard
+    }))
       .then(res => { console.debug("sendViberUrlMessage POST response ", res) })
       .catch(error => { console.error("sendViberUrlMessage POST error ", error) })
   }))
