@@ -120,10 +120,10 @@ module.exports = async function (context, myQueueItem) {
           }
         )
 
-        const tracking_data = myQueueItem.message.tracking_data || JSON.stringify({
+        const tracking_data = myQueueItem.message.tracking_data || /*default*/JSON.stringify({
           timestamp: 0,
           data: {
-            conversation_stage: "fetch-patient-name-from-bodimedDB",
+            conversation_stage: "choose-patient-from-bodimed",
             parameters: {
             }
           }
@@ -140,7 +140,7 @@ module.exports = async function (context, myQueueItem) {
 
       rp = /^\?idnap=[0-9]+&pass=[0-9]+$/gi  //doctor fetching exam results for specific patient from bodibmed DB
       if (rp.test(myQueueItem.message.text)) {
-        const tracking_data = JSON.parse(myQueueItem.message.tracking_data);
+        const tracking_data = JSON.parse(myQueueItem.message.tracking_data || /*default*/JSON.stringify({data:{parameters:{}}}));
         var a2pClient = new Api2Pdf(process.env.API2PDF_KEY);
         const result = await bodimed.getResults(context, myQueueItem.message.text);
         const mldata = result.outcome.mldata;
