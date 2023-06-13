@@ -11,7 +11,7 @@ module.exports = async function (context, req) {
     context.log(`New incoming message. Event type is "${req.body.event}"`);
     context.log.verbose(JSON.stringify(req.body));
 
-    const secret = process.env.VIBER_AUTH_TOKEN_DEV;
+    const secret = process.env.VIBER_AUTH_TOKEN;
     const hash = createHmac('sha256', secret)
         .update(req.rawBody || "")
         .digest('hex');

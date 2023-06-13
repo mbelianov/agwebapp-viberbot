@@ -18,7 +18,7 @@ const patientsDBtable = TableClient.fromConnectionString(connectionString, "pati
 const myAxios = axios.create({
   baseURL: 'https://chatapi.viber.com',
   headers: {
-    "X-Viber-Auth-Token": process.env.VIBER_AUTH_TOKEN_DEV,
+    "X-Viber-Auth-Token": process.env.VIBER_AUTH_TOKEN,
     "Content-Type": "application/json"
   }
 });
