@@ -1,0 +1,119 @@
+{
+    "_id": "0817495d-9366-4422-a866-5a270c6843d9",
+    "colName": "viber_bot",
+    "created": "2023-05-03T12:29:27.736Z",
+    "sortNum": 10000,
+    "folders": [],
+    "requests": [
+        {
+            "_id": "c1ad54ae-991a-450d-9ab3-7cca5ff5a1d1",
+            "colId": "0817495d-9366-4422-a866-5a270c6843d9",
+            "containerId": "",
+            "name": "get_account_info_prod",
+            "url": "https://chatapi.viber.com/pa/get_account_info",
+            "method": "POST",
+            "sortNum": 10000,
+            "created": "2023-05-03T12:29:27.743Z",
+            "modified": "2023-05-03T12:42:51.822Z",
+            "headers": [
+                {
+                    "name": "X-Viber-Auth-Token",
+                    "value": "{{VIBER_AUTH_TOKEN_PROD}}"
+                }
+            ],
+            "params": [],
+            "tests": []
+        },
+        {
+            "_id": "7e69e380-09f8-4116-90d8-b655dc0c61e6",
+            "colId": "0817495d-9366-4422-a866-5a270c6843d9",
+            "containerId": "",
+            "name": "get_account_info_dev",
+            "url": "https://chatapi.viber.com/pa/get_account_info",
+            "method": "POST",
+            "sortNum": 20000,
+            "created": "2023-05-03T12:43:41.282Z",
+            "modified": "2023-05-03T12:44:24.414Z",
+            "headers": [
+                {
+                    "name": "X-Viber-Auth-Token",
+                    "value": "{{VIBER_AUTH_TOKEN_DEV}}"
+                }
+            ],
+            "params": [],
+            "tests": []
+        },
+        {
+            "_id": "bc3080be-8542-4cbb-baa5-c3dec275d4a1",
+            "colId": "0817495d-9366-4422-a866-5a270c6843d9",
+            "containerId": "",
+            "name": "set_webhook_dev",
+            "url": "https://chatapi.viber.com/pa/set_webhook",
+            "method": "POST",
+            "sortNum": 30000,
+            "created": "2023-05-05T06:15:52.610Z",
+            "modified": "2023-06-11T05:04:34.123Z",
+            "headers": [
+                {
+                    "name": "X-Viber-Auth-Token",
+                    "value": "{{VIBER_AUTH_TOKEN_DEV}}"
+                }
+            ],
+            "params": [],
+            "body": {
+                "type": "json",
+                "raw": "{\n   \"url\":\"https://3376-46-238-15-223.ngrok-free.app/api/newMessage\",\n   \"event_types\":[\n      \"delivered\",\n      \"seen\",\n      \"failed\",\n      \"subscribed\",\n      \"unsubscribed\",\n      \"conversation_started\"\n   ],\n   \"send_name\": true,\n   \"send_photo\": true\n}",
+                "form": []
+            },
+            "tests": []
+        },
+        {
+            "_id": "fbb33942-822d-4f17-bad1-6165bafcacc7",
+            "colId": "0817495d-9366-4422-a866-5a270c6843d9",
+            "containerId": "",
+            "name": "set_webhook_demo",
+            "url": "https://chatapi.viber.com/pa/set_webhook",
+            "method": "POST",
+            "sortNum": 40000,
+            "created": "2023-06-05T18:52:28.430Z",
+            "modified": "2023-06-05T18:53:10.207Z",
+            "headers": [
+                {
+                    "name": "X-Viber-Auth-Token",
+                    "value": "{{VIBER_AUTH_TOKEN_DEV}}"
+                }
+            ],
+            "params": [],
+            "body": {
+                "type": "json",
+                "raw": "{\n   \"url\":\"https://viberbot-demo.azurewebsites.net/api/newmessage?code=r9N22Ki2R9C_ZCUNvJCnJqcXVzWtJUbUS6gjhP3V4pn7AzFuPeBNMw%3D%3D\",\n   \"event_types\":[\n      \"delivered\",\n      \"seen\",\n      \"failed\",\n      \"subscribed\",\n      \"unsubscribed\",\n      \"conversation_started\"\n   ],\n   \"send_name\": true,\n   \"send_photo\": true\n}",
+                "form": []
+            },
+            "tests": []
+        },
+        {
+            "_id": "1538512e-0d06-407c-8931-2f1629774ff1",
+            "colId": "0817495d-9366-4422-a866-5a270c6843d9",
+            "containerId": "",
+            "name": "set_webhook_prod_on_app2",
+            "url": "https://chatapi.viber.com/pa/set_webhook",
+            "method": "POST",
+            "sortNum": 50000,
+            "created": "2023-07-04T19:08:15.952Z",
+            "modified": "2023-07-04T19:14:34.310Z",
+            "headers": [
+                {
+                    "name": "X-Viber-Auth-Token",
+                    "value": "{{VIBER_AUTH_TOKEN_PROD}}"
+                }
+            ],
+            "params": [],
+            "body": {
+                "type": "json",
+                "raw": "{\n   \"url\":\"https://viberbot-app2.azurewebsites.net/api/newmessage?code=T2vC%2FAhTEHxQjgg0GRrwUJUd2VNf8TCnZMiJ3kAAamg6NXTkYP68pQ%3D%3D\",\n   \"event_types\":[\n      \"delivered\",\n      \"seen\",\n      \"failed\",\n      \"subscribed\",\n      \"unsubscribed\",\n      \"conversation_started\"\n   ],\n   \"send_name\": true,\n   \"send_photo\": true\n}",
+                "form": []
+            },
+            "tests": []
+        }
+    ]
+}
