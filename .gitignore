@@ -1,6 +1,7 @@
 node_modules
 localdev-config.json
-*.exe
+ngrock.exe
+azure_functions/downloadBodimedDB
 
 # Azurite artifacts
 __blobstorage__

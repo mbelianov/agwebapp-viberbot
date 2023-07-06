@@ -76,7 +76,7 @@
             "method": "POST",
             "sortNum": 40000,
             "created": "2023-06-05T18:52:28.430Z",
-            "modified": "2023-06-05T18:53:10.207Z",
+            "modified": "2023-07-06T17:03:00.383Z",
             "headers": [
                 {
                     "name": "X-Viber-Auth-Token",
@@ -86,7 +86,7 @@
             "params": [],
             "body": {
                 "type": "json",
-                "raw": "{\n   \"url\":\"https://viberbot-demo.azurewebsites.net/api/newmessage",\n   \"event_types\":[\n      \"delivered\",\n      \"seen\",\n      \"failed\",\n      \"subscribed\",\n      \"unsubscribed\",\n      \"conversation_started\"\n   ],\n   \"send_name\": true,\n   \"send_photo\": true\n}",
+                "raw": "{\n   \"url\":{{VIBERBOT-DEMO_FUNCTION_URL}},\n   \"event_types\":[\n      \"delivered\",\n      \"seen\",\n      \"failed\",\n      \"subscribed\",\n      \"unsubscribed\",\n      \"conversation_started\"\n   ],\n   \"send_name\": true,\n   \"send_photo\": true\n}",
                 "form": []
             },
             "tests": []
@@ -100,7 +100,7 @@
             "method": "POST",
             "sortNum": 50000,
             "created": "2023-07-04T19:08:15.952Z",
-            "modified": "2023-07-04T19:14:34.310Z",
+            "modified": "2023-07-06T20:12:00.311Z",
             "headers": [
                 {
                     "name": "X-Viber-Auth-Token",
@@ -110,7 +110,7 @@
             "params": [],
             "body": {
                 "type": "json",
-                "raw": "{\n   \"url\":\"https://viberbot-app2.azurewebsites.net/api/newmessage",\n   \"event_types\":[\n      \"delivered\",\n      \"seen\",\n      \"failed\",\n      \"subscribed\",\n      \"unsubscribed\",\n      \"conversation_started\"\n   ],\n   \"send_name\": true,\n   \"send_photo\": true\n}",
+                "raw": "{\n   \"url\":{{VIBERBOT-APP2_FUNCTION_URL}},\n   \"event_types\":[\n      \"delivered\",\n      \"seen\",\n      \"failed\",\n      \"subscribed\",\n      \"unsubscribed\",\n      \"conversation_started\"\n   ],\n   \"send_name\": true,\n   \"send_photo\": true\n}",
                 "form": []
             },
             "tests": []
