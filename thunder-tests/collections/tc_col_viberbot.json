@@ -86,7 +86,7 @@
             "params": [],
             "body": {
                 "type": "json",
-                "raw": "{\n   \"url\":\"https://viberbot-demo.azurewebsites.net/api/newmessage?code=r9N22Ki2R9C_ZCUNvJCnJqcXVzWtJUbUS6gjhP3V4pn7AzFuPeBNMw%3D%3D\",\n   \"event_types\":[\n      \"delivered\",\n      \"seen\",\n      \"failed\",\n      \"subscribed\",\n      \"unsubscribed\",\n      \"conversation_started\"\n   ],\n   \"send_name\": true,\n   \"send_photo\": true\n}",
+                "raw": "{\n   \"url\":\"https://viberbot-demo.azurewebsites.net/api/newmessage",\n   \"event_types\":[\n      \"delivered\",\n      \"seen\",\n      \"failed\",\n      \"subscribed\",\n      \"unsubscribed\",\n      \"conversation_started\"\n   ],\n   \"send_name\": true,\n   \"send_photo\": true\n}",
                 "form": []
             },
             "tests": []
@@ -110,7 +110,7 @@
             "params": [],
             "body": {
                 "type": "json",
-                "raw": "{\n   \"url\":\"https://viberbot-app2.azurewebsites.net/api/newmessage?code=T2vC%2FAhTEHxQjgg0GRrwUJUd2VNf8TCnZMiJ3kAAamg6NXTkYP68pQ%3D%3D\",\n   \"event_types\":[\n      \"delivered\",\n      \"seen\",\n      \"failed\",\n      \"subscribed\",\n      \"unsubscribed\",\n      \"conversation_started\"\n   ],\n   \"send_name\": true,\n   \"send_photo\": true\n}",
+                "raw": "{\n   \"url\":\"https://viberbot-app2.azurewebsites.net/api/newmessage",\n   \"event_types\":[\n      \"delivered\",\n      \"seen\",\n      \"failed\",\n      \"subscribed\",\n      \"unsubscribed\",\n      \"conversation_started\"\n   ],\n   \"send_name\": true,\n   \"send_photo\": true\n}",
                 "form": []
             },
             "tests": []
