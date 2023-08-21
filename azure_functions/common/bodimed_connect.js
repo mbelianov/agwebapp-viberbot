@@ -92,7 +92,7 @@ exports.getPatients = (context, filter_string, filter_type = "name") => {
   }
 
   let _ot = '01.08.2121'; //just default date
-  d = new Date(d.getTime() - 5 * 30 * 24 * 3600 * 1000);
+  d = new Date(d.getTime() - 1 * 30 * 24 * 3600 * 1000);
   if (d != "Invalid Date") {
     let dd = d.getDate();
     let mm = d.getMonth() + 1;
@@ -101,10 +101,12 @@ exports.getPatients = (context, filter_string, filter_type = "name") => {
   }
 
   let reqOptions = {
-    url: "https://results.bodimed.com/new/naplek.php",
+    //url: "https://results.bodimed.com/new/naplek.php",
+    url: "https://results.bodimed.com/new/napfilial.php",
     method: "POST",
     headers: headersList,
-    data: `idnap=2300010857&pass=0857&ot=${_ot}&do=${_do}&search=search`,
+    //data: `idnap=2300010857&pass=0857&ot=${_ot}&do=${_do}&search=search`,
+    data: `ot=${_ot}&do=${_do}&egn=&familia=&filial=451&pass=1234451&grad=&search=search`,
     responseType: 'arraybuffer',
     //responseEncoding: 'latin1'
   }
