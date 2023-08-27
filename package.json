@@ -1,27 +1,16 @@
 {
-  "name": "agwebapp-viberbot",
+  "name": "azure_functions",
   "version": "1.0.0",
   "description": "",
-  "main": "index.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1",
-    "dev": "nodemon index,js",
-    "start": "node index.js"
+    "start": "func start",
+    "test": "echo \"No tests yet...\""
   },
-  "keywords": [],
-  "author": "",
-  "license": "ISC",
   "dependencies": {
-    "@cloudant/cloudant": "^4.5.1",
-    "api2pdf": "^2.0.0",
-    "axios": "^0.21.4",
-    "cheerio": "^1.0.0-rc.10",
-    "ibm-cloud-env": "^0.2.7",
-    "viber-bot": "^1.0.18",
-    "winston": "^3.3.3",
-    "winston-console-formatter": "^1.0.0-beta.3"
-  },
-  "devDependencies": {
-    "nodemon": "^2.0.13"
+    "@azure/data-tables": "^13.2.2",
+    "@azure/storage-blob": "^12.14.0",
+    "api2pdf": "^2.0.1",
+    "axios": "^0.24.0",
+    "cheerio": "^1.0.0-rc.10"
   }
 }
