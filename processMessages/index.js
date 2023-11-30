@@ -152,14 +152,13 @@ module.exports = async function (context, myQueueItem) {
           "tasks": {
             "fetch_results": {
               "operation": "capture-website",
-              "url": `https://arabadjikova-apim.azure-api.net/bodimed/v1/new/results.php?${myQueueItem.message.text}`,
+              "url": `https://arabadjikova-apim.azure-api.net/bodimed/v1/new/results_patient.php${myQueueItem.message.text}`,
               "output_format": "jpg",
-              "engine": "chrome",
-              "screen_width": 1440,
-              "fit": "max",
-              "quality": 80,
-              "wait_until": "load",
-              "wait_time": 0,
+              "engine": "wkhtml",
+              "wait_time": 100,
+              "zoom": 1,
+              "screen_width": 720,
+              "fit": "scale",
               "headers": {
                 "Ocp-Apim-Subscription-Key": `${apimSubscriptionKey}`
               }
@@ -176,7 +175,7 @@ module.exports = async function (context, myQueueItem) {
         });
 
         job = await cloudConvert.jobs.wait(job.id); // Wait for job completion
-        const url = cloudConvert.jobs.getExportUrls(job)[0];
+        const outputUrl = cloudConvert.jobs.getExportUrls(job)[0];
 
         let track_data = null;
         let kb = null;
@@ -187,7 +186,7 @@ module.exports = async function (context, myQueueItem) {
             data: {
               conversation_stage: "present-results", current_task: "result_interpretation",
               parameters: {
-                resultUrl: result.FileUrl,
+                resultUrl: outputUrl.url,
                 blobName: null,//blobName,
                 patientViberId: tracking_data.data.parameters.patientViberId || "",
                 patientViberName: tracking_data.data.parameters.patientViberName || ""
@@ -209,7 +208,7 @@ module.exports = async function (context, myQueueItem) {
         if (tracking_data.data.parameters.patientViberName)
           await sendViberMessage(myQueueItem.sender.id, `Заявка от ${tracking_data.data.parameters.patientViberName || "---"}`)
 
-        return await sendViberUrlMessages(myQueueItem.sender.id, [result.FileUrl], track_data, kb); 
+        return await sendViberUrlMessages(myQueueItem.sender.id, [outputUrl.url], track_data, kb); 
 
         
 
