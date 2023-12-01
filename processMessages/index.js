@@ -157,7 +157,7 @@ module.exports = async function (context, myQueueItem) {
               "engine": "wkhtml",
               "wait_time": 100,
               "zoom": 1,
-              "screen_width": 720,
+              "screen_width": 660,
               "fit": "scale",
               "headers": {
                 "Ocp-Apim-Subscription-Key": `${apimSubscriptionKey}`
