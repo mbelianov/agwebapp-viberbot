@@ -6,27 +6,18 @@
       "command": "host start",
       "problemMatcher": "$func-node-watch",
       "isBackground": true,
-      "dependsOn": "npm install (functions)",
-      "options": {
-        "cwd": "${workspaceFolder}/azure_functions"
-      }
+      "dependsOn": "npm install (functions)"
     },
     {
       "type": "shell",
       "label": "npm install (functions)",
-      "command": "npm install",
-      "options": {
-        "cwd": "${workspaceFolder}/azure_functions"
-      }
+      "command": "npm install"
     },
     {
       "type": "shell",
       "label": "npm prune (functions)",
       "command": "npm prune --production",
-      "problemMatcher": [],
-      "options": {
-        "cwd": "${workspaceFolder}/azure_functions"
-      }
+      "problemMatcher": []
     }
   ]
 }

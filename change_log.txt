@@ -10,3 +10,6 @@ User story 003
 User story 004
 Подготовка на данни за обучение на ML агоритъм за text classification (OK/NOK) на резултатите от изследванията на 
 пациентите (като подготовка за бъдеща автоматизация на процеса)
+
+Branch: Sofia
+User story: Replace old api2pdf interface with CloudConvert which allows better control over pdf conversion process

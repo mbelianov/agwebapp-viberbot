@@ -2,18 +2,21 @@ const axios = require('axios');
 const Api2Pdf = require('api2pdf');
 //const bodimed = require('./helpers/bodimed_connect');
 const bodimed = require('../common/bodimed_connect');
-const AssistantV2 = require('ibm-watson/assistant/v2');
-const { IamAuthenticator } = require('ibm-watson/auth');
+//const AssistantV2 = require('ibm-watson/assistant/v2');
+//const { IamAuthenticator } = require('ibm-watson/auth');
 const { TableClient } = require("@azure/data-tables");
 const { button } = require("../common/keyboard_buttons");
 const { concatHexCharCode, removeNullParams } = require("../common/support_functions");
 const mltools = require("./helpers/mltools")
+const CloudConvert = require('cloudconvert');
 
 const connectionString = process.env.AzureWebJobsStorage;
 const containerName = process.env.TRAINING_DATA_CONTAINER_NAME;
 const textClassificationProjectFile = process.env.TEXT_CLASSIFICATION_PROJECT_FILE;
 const requestsTable = TableClient.fromConnectionString(connectionString, "resultrequests");
 const patientsDBtable = TableClient.fromConnectionString(connectionString, "patientsDB");
+const cloudConvertAPIKey = process.env.CLOUDCONVERT_API_KEY;
+const apimSubscriptionKey = process.env.OCP_APIM_SUBSCRIPTION_KEY;
 
 const myAxios = axios.create({
   baseURL: 'https://chatapi.viber.com',
@@ -23,17 +26,20 @@ const myAxios = axios.create({
   }
 });
 
+const cloudConvert = new CloudConvert(cloudConvertAPIKey);
+
 let richMediaContent = {
   "ButtonsGroupColumns": 6,
   "ButtonsGroupRows": 6,
   "Buttons": []
 }
 
-const assistant = new AssistantV2({
-  authenticator: new IamAuthenticator({ apikey: process.env.IBM_WATSON_API_KEY }),
-  serviceUrl: 'https://api.eu-de.assistant.watson.cloud.ibm.com',
-  version: '2021-06-14'
-});
+
+// const assistant = new AssistantV2({
+//   authenticator: new IamAuthenticator({ apikey: process.env.IBM_WATSON_API_KEY }),
+//   serviceUrl: 'https://api.eu-de.assistant.watson.cloud.ibm.com',
+//   version: '2021-06-14'
+// });
 
 module.exports = async function (context, myQueueItem) {
   let doctors = context.bindings.rDoctors;
@@ -141,56 +147,80 @@ module.exports = async function (context, myQueueItem) {
       rp = /^\?idnap=[0-9]+&pass=[0-9]+$/gi  //doctor fetching exam results for specific patient from bodibmed DB
       if (rp.test(myQueueItem.message.text)) {
         const tracking_data = JSON.parse(myQueueItem.message.tracking_data || /*default*/JSON.stringify({data:{parameters:{}}}));
-        var a2pClient = new Api2Pdf(process.env.API2PDF_KEY);
-        const result = await bodimed.getResults(context, myQueueItem.message.text);
-        const mldata = result.outcome.mldata;
-        //const blobName = await mltools.createAzureBlob(connectionString, containerName, mldata);
-        //await mltools.updateProjectFile(connectionString, containerName, blobName, textClassificationProjectFile);
-        return await a2pClient.chromeHtmlToImage(result.result)
-          .then(async (result) => {
+        
+        let job = await cloudConvert.jobs.create({
+          "tasks": {
+            "fetch_results": {
+              "operation": "capture-website",
+              "url": `https://arabadjikova-apim.azure-api.net/bodimed/v1/new/results_patient.php${myQueueItem.message.text}`,
+              "output_format": "jpg",
+              "engine": "wkhtml",
+              "wait_time": 100,
+              "zoom": 1,
+              "screen_width": 660,
+              "fit": "scale",
+              "headers": {
+                "Ocp-Apim-Subscription-Key": `${apimSubscriptionKey}`
+              }
+            },
+            "export": {
+              "operation": "export/url",
+              "input": [
+                "fetch_results"
+              ],
+              "inline": true,
+              "archive_multiple_files": false
+            }
+          },
+        });
 
-            let track_data = null;
-            let kb = null;
+        job = await cloudConvert.jobs.wait(job.id); // Wait for job completion
+        const outputUrl = cloudConvert.jobs.getExportUrls(job)[0];
 
-            if (tracking_data.data.parameters.patientViberId) {
-              track_data = JSON.stringify({
-                timestamp: 0,
-                data: {
-                  conversation_stage: "present-results", current_task: "result_interpretation",
-                  parameters: {
-                    resultUrl: result.FileUrl,
-                    blobName: null,//blobName,
-                    patientViberId: tracking_data.data.parameters.patientViberId || "",
-                    patientViberName: tracking_data.data.parameters.patientViberName || ""
-                  }
-                }
-              })
+        let track_data = null;
+        let kb = null;
 
-              kb = {
-                "Type": "keyboard",
-                "Buttons": [
-                  button(`${stdReplies[0].text}`, `---interpretation|${stdReplies[0].reply}|Cat1`, 2, 1),
-                  button(`${stdReplies[1].text}`, `---interpretation|${stdReplies[1].reply}|Cat2`, 2, 1),
-                  button(`${stdReplies[2].text}`, `---interpretation|${stdReplies[2].reply}|Cat3`, 2, 1),
-                  button(`Следващ (${registeredRequests.length})`, "---resultrequests")
-                ]
+        if (tracking_data.data.parameters.patientViberId) {
+          track_data = JSON.stringify({
+            timestamp: 0,
+            data: {
+              conversation_stage: "present-results", current_task: "result_interpretation",
+              parameters: {
+                resultUrl: outputUrl.url,
+                blobName: null,//blobName,
+                patientViberId: tracking_data.data.parameters.patientViberId || "",
+                patientViberName: tracking_data.data.parameters.patientViberName || ""
               }
             }
-
-            if (tracking_data.data.parameters.patientViberName)
-              await sendViberMessage(myQueueItem.sender.id, `Заявка от ${tracking_data.data.parameters.patientViberName || "---"}`)
-
-            return await sendViberUrlMessages(myQueueItem.sender.id, [result.FileUrl], track_data, kb); 
-            return await myAxios.post('/pa/send_message', msgData)
-              .then(async res => {
-                //const blobName = await mltools.createAzureBlob(connectionString, containerName, mldata);
-                //await mltools.updateProjectFile(connectionString, containerName, blobName, textClassificationProjectFile);
-                //context.log.verbose("send_message POST result: ", res)
-              })
-              .catch(error => { context.log.error("send_message POST error: ", error) })
-
           })
-          .catch(error => { context.log.error("api2pdf error: ", error) });
+
+          kb = {
+            "Type": "keyboard",
+            "Buttons": [
+              button(`${stdReplies[0].text}`, `---interpretation|${stdReplies[0].reply}|Cat1`, 2, 1),
+              button(`${stdReplies[1].text}`, `---interpretation|${stdReplies[1].reply}|Cat2`, 2, 1),
+              button(`${stdReplies[2].text}`, `---interpretation|${stdReplies[2].reply}|Cat3`, 2, 1),
+              button(`Следващ (${registeredRequests.length})`, "---resultrequests")
+            ]
+          }
+        }
+
+        if (tracking_data.data.parameters.patientViberName)
+          await sendViberMessage(myQueueItem.sender.id, `Заявка от ${tracking_data.data.parameters.patientViberName || "---"}`)
+
+        return await sendViberUrlMessage(myQueueItem.sender.id, outputUrl.url, track_data, kb)
+          .then(async result => {
+            //const result = await bodimed.getResults(context, myQueueItem.message.text);
+            //const mldata = result.outcome.mldata;
+            //const blobName = await mltools.createAzureBlob(connectionString, containerName, mldata);
+            //await mltools.updateProjectFile(connectionString, containerName, blobName, textClassificationProjectFile);
+            //const blobName = await mltools.createAzureBlob(connectionString, containerName, mldata);
+            //await mltools.updateProjectFile(connectionString, containerName, blobName, textClassificationProjectFile);   
+            context.log("Bodimed results sent back succesfully as jpg.")
+          })
+          .catch(error => {
+            context.log.error("Failed to send back results. Error description: ", error)
+          }); 
       }
 
       rp = /^---interpretation\|.{1,}\|Cat[1-3]$/gi //doctor provides instructions to the bot what to reply to the patient
@@ -341,102 +371,11 @@ module.exports = async function (context, myQueueItem) {
         "Type": "keyboard",
         "Buttons": [button("Към началното меню", "---start")]
       })
-
-    let watson = tracking_data.data.watson ? tracking_data.data.watson : {}
-    //let responses
-    if (!watson.session_id) {
-      await assistant.createSession({
-        assistantId: process.env.IBM_WATSON_ASSISTANT_ID
-      })
-        .then(response => {
-          context.log.verbose("opening new Watson session:", JSON.stringify(response.result, null, 2));
-          watson.session_id = response.result.session_id;
-        })
-        .catch(err => { context.log.error(err) });
-    }
-
-    await sendMessageToWatson(myQueueItem.sender.id, watson.session_id, myQueueItem.message.text, null, context);
   }
   else
     context.log("no new message")
 };
 
-async function sendMessageToWatson(userId, sessionId, messageInput, wa_context, azf_context) {
-  await assistant.message({
-    input: {
-      text: messageInput,
-      //intents: tracking_data.data.watson_intents,
-      options: { return_context: true },
-    },
-    userId: userId,
-    assistantId: process.env.IBM_WATSON_ASSISTANT_ID,
-    sessionId: sessionId,
-    context: wa_context
-  })
-    .then(async (response) => {
-      azf_context.log("Watson response:", JSON.stringify(response.result, null, 2));
-      await processWatsonResponse(response.result, azf_context);
-    })
-    .catch(err => { azf_context.log.error("error occured while talking to watson:", err) });
-}
-
-async function processWatsonResponse(response, azf_context) {
-  let intents = response.output.intents;
-  let replies = response.output.generic
-  let sessionId = response.context.global.session_id
-  let userId = response.user_id
-  let tracking_data = {
-    data: {
-      watson: {
-        session_id: sessionId,
-        intents: intents
-      }
-    },
-    timestamp: Date.now()
-  }
-
-  for (i = 0; Array.isArray(replies) && i < replies.length; i++) {//context.log(responses[i].text)
-    if (replies[i].response_type === "option") {
-      let richMediaContent = { "ButtonsGroupRows": 2, "ButtonsGroupColumns": 4, "Buttons": [] }
-      replies[i].options.forEach((option) => {
-        richMediaContent.Buttons.push({
-          "ActionType": "reply",
-          "ActionBody": option.value.input.text,
-          "Text": option.label
-        })
-      })
-
-      await sendViberMessage(userId, replies[i].title, tracking_data)
-      await sendViberRichMedia(userId, richMediaContent, tracking_data)
-    }
-
-    if (replies[i].response_type === "text") {
-      await sendViberMessage(userId, replies[i].text, tracking_data)
-    }
-
-    if (replies[i].response_type === "user_defined") {
-      if (replies[i].user_defined.type === "url") {
-        await sendViberUrlMessages(userId, [replies[i].user_defined.value.url], tracking_data)
-      }
-    }
-  }
-
-  if (response.output.actions)
-    if (response.output.actions[0].type === "client")
-      if (response.output.actions[0].name === "getExamResultReport") {
-        let patientId = response.output.actions[0].parameters.patient_id
-        let patientId_type = response.output.actions[0].parameters.patient_id_type
-        let resultVar = response.output.actions[0].result_variable
-        let wa_context = { 'skills': { 'main skill': { 'user_defined': {} } } }
-        let resultReports = await getExamResultReports(azf_context, patientId, patientId_type)
-        await sendViberUrlMessages(userId, resultReports, tracking_data)
-        if (resultReports.length > 0)
-          wa_context['skills']['main skill']['user_defined'][resultVar] = `Това бяха вашите резултати!`
-        else
-          wa_context['skills']['main skill']['user_defined'][resultVar] = `Не намерих резултати`
-        await sendMessageToWatson(userId, sessionId, "", wa_context, azf_context)
-      }
-}
 
 async function getExamResultReports(azf_context, patientId, patientId_type) {
   const patients = await bodimed.getPatients(azf_context, patientId, patientId_type)
@@ -458,18 +397,34 @@ async function getExamResultReports(azf_context, patientId, patientId_type) {
   }))
 }
 
-async function sendViberUrlMessages(userId, urlList, tracking_data = null, keyboard = null) {
-  await Promise.all(urlList.map(async (url) => {
-    const t = removeNullParams({
+async function sendViberUrlMessage(userId, urlString, tracking_data = null, keyboard = null){
+  try{
+    const result = await myAxios.post('/pa/send_message', removeNullParams({
       "receiver": userId,
       "min_api_version": 1,
       "type": "url",
       "sender": { "name": "Асистент" },
-      "media": url,
+      "media": urlString,
       "tracking_data": tracking_data,
       "keyboard": keyboard
-    })
+    }))
 
+    console.log("sendViberUrlMessage POST response ", result);
+    return ({
+      "Result":"Success",
+      "Description": result
+    })
+  } catch(error){
+    console.error("sendViberUrlMessage POST error ", error);
+    throw({
+      "Result":"Error",
+      "Description": error
+    });
+  }
+}
+
+async function sendViberUrlMessages(userId, urlList, tracking_data = null, keyboard = null) {
+  await Promise.all(urlList.map(async (url) => {
     await myAxios.post('/pa/send_message', removeNullParams({
       "receiver": userId,
       "min_api_version": 1,
