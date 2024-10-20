@@ -150,10 +150,24 @@ module.exports = async function (context, myQueueItem) {
         
         let job = await cloudConvert.jobs.create({
           "tasks": {
-            "fetch_results": {
+            "fetch_results_jpg": {
               "operation": "capture-website",
               "url": `https://arabadjikova-apim.azure-api.net/bodimed/v1/new/results_patient.php${myQueueItem.message.text}`,
               "output_format": "jpg",
+              "engine": "wkhtml",
+              "wait_time": 100,
+              "zoom": 1,
+              "screen_width": 660,
+              "fit": "scale",
+              "filename": "result.jpeg",
+              "headers": {
+                "Ocp-Apim-Subscription-Key": `${apimSubscriptionKey}`
+              }
+            },
+            "fetch_results_png": {
+              "operation": "capture-website",
+              "url": `https://arabadjikova-apim.azure-api.net/bodimed/v1/new/results_patient.php${myQueueItem.message.text}`,
+              "output_format": "png",
               "engine": "wkhtml",
               "wait_time": 100,
               "zoom": 1,
@@ -166,7 +180,7 @@ module.exports = async function (context, myQueueItem) {
             "export": {
               "operation": "export/url",
               "input": [
-                "fetch_results"
+                "fetch_results_jpg"
               ],
               "inline": true,
               "archive_multiple_files": false
@@ -175,7 +189,8 @@ module.exports = async function (context, myQueueItem) {
         });
 
         job = await cloudConvert.jobs.wait(job.id); // Wait for job completion
-        const outputUrl = cloudConvert.jobs.getExportUrls(job)[0];
+        const outputUrls = cloudConvert.jobs.getExportUrls(job);//[0];
+        //const outputUrl1 = cloudConvert.jobs.getExportUrls(job)[1];
 
         let track_data = null;
         let kb = null;
@@ -208,7 +223,8 @@ module.exports = async function (context, myQueueItem) {
         if (tracking_data.data.parameters.patientViberName)
           await sendViberMessage(myQueueItem.sender.id, `Заявка от ${tracking_data.data.parameters.patientViberName || "---"}`)
 
-        return await sendViberUrlMessage(myQueueItem.sender.id, outputUrl.url, track_data, kb)
+        return await sendViberPictureMessage(myQueueItem.sender.id, outputUrls, track_data, kb)
+        //return await sendViberUrlMessage(myQueueItem.sender.id, outputUrls[0].url, track_data, kb)
           .then(async result => {
             //const result = await bodimed.getResults(context, myQueueItem.message.text);
             //const mldata = result.outcome.mldata;
@@ -396,6 +412,43 @@ async function getExamResultReports(azf_context, patientId, patientId_type) {
     return reportUlr
   }))
 }
+
+async function sendViberPictureMessage(userId, urlStrings, tracking_data = null, keyboard = null){
+  let s = urlStrings[0].url;
+  let d = decodeURIComponent(s);//.replace(/\\/g, '');
+  let e = encodeURI(d);
+
+  console.log ("s=", s);
+  console.log ("d=", d);
+  console.log ("e=", e);
+
+  try{
+    const result =  await myAxios.post('/pa/send_message', removeNullParams({
+      "receiver": userId,
+      "min_api_version": 1,
+      "type": "picture",
+      "text": `${urlStrings[0].filename} (${urlStrings[0].size})`,
+      "sender": { "name": "Асистент" },
+      "media": d,
+      "thumbnail": urlStrings[0].url,
+      "tracking_data": tracking_data,
+      "keyboard": keyboard
+    }))
+
+    console.log("sendViberPictureMessage POST response ", result);
+    return ({
+      "Result":"Success",
+      "Description": result
+    })
+  } catch(error){
+    console.error("sendViberPictureMessage POST error ", error);
+    throw({
+      "Result":"Error",
+      "Description": error
+    });
+  }
+}
+
 
 async function sendViberUrlMessage(userId, urlString, tracking_data = null, keyboard = null){
   try{
